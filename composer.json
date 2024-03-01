@@ -1,0 +1,37 @@
+{
+    "name": "flekssk/laravel-util",
+    "description": "utility classes",
+    "type": "library",
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^8.75 || ^9.19 || ^10.10",
+        "colopl/laravel-spanner": "^3.4 || ^4.0 || ^5.1 || ^6.0",
+        "ext-json": "*",
+        "google/cloud-pubsub": "^1.38",
+        "darkaonline/l5-swagger": "^8.0",
+        "elasticsearch/elasticsearch": "^8.11"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.4.4",
+        "phpunit/phpunit": "^9.5.10",
+        "barryvdh/laravel-debugbar": "^3.8"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aleksei Osiov",
+            "email": "fks-sk@yandex.ru"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "FKS\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
