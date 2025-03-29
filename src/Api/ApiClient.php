@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace FKS\Api;
 
+use FKS\Api\DTO\ApiResponse;
+use FKS\Services\Serializer\FKSSerializerFacade;
+use FKS\Services\Serializer\FKSSerializerInterface;
+use FKS\Services\Serializer\FKSSimpleSerializer;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
-use FKS\Services\Serializer\FKSSerializerFacade;
-use FKS\Services\Serializer\FKSSerializerInterface;
-use FKS\Services\Serializer\FKSSimpleSerializer;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiClient

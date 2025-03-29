@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Api;
+namespace FKS\Api\DTO;
 
 use FKS\Services\Serializer\DTO\SerializableDTO;
 

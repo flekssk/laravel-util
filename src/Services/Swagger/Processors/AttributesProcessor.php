@@ -9,7 +9,7 @@ use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use FKS\Http\Attributes\Schemas\Requests\MediaType;
 
-class FKSAttributesProcessor
+class AttributesProcessor
 {
     public function __invoke(Analysis $analysis): void
     {
