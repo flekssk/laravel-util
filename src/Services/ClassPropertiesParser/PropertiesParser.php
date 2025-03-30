@@ -6,7 +6,6 @@ namespace FKS\Services\ClassPropertiesParser;
 
 use Doctrine\Common\Annotations\PhpParser;
 use Illuminate\Support\Str;
-use FKS\Exceptions\FKSDomainException;
 
 class PropertiesParser
 {
@@ -47,7 +46,7 @@ class PropertiesParser
 
                             if (count($availableTypes) > 1) {
                                 $types = implode(', ', $availableTypes);
-                                throw new FKSDomainException( "FKSSerializer can`t chose type of $propertyName. Find more that one type $types");
+                                throw new \DomainException( "SxopeSerializer can`t chose type of $propertyName. Find more that one type $types");
                             }
 
                             $type = array_pop($availableTypes);
@@ -106,7 +105,11 @@ class PropertiesParser
             } elseif ($propertyIsObject) {
                 $properties[] = new ObjectClassProperty($property->getName(),  is_object($type) ? $type->getName() : $type);
             } else {
-                $properties[] = new ScalarClassProperty($property->getName(), is_object($type) ? $type->getName() : $type);
+                $properties[] = new ScalarClassProperty(
+                    $property->getName(),
+                    is_object($type) ? $type->getName() : $type,
+                    $property->getType()->allowsNull(),
+                );
             }
         }
 

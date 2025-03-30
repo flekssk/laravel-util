@@ -4,26 +4,22 @@ declare(strict_types=1);
 
 namespace FKS\Services\Metadata\Models;
 
-use FKS\Models\Model;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use FKS\Services\Metadata\Casts\MetadataValueCast;
-use FKS\Services\Metadata\Helpers\FKSMetadataConfigHelper;
 use FKS\Services\Metadata\MetadataConfig;
 
 abstract class Metadata extends Model
 {
+    use SoftDeletes;
+
     protected static ?MetadataConfig $config = null;
 
     protected $guarded = [];
     public $timestamps = false;
 
-    /**
-     * @param class-string<Metadata> $targetModelClass
-     * @return \Colopl\Spanner\Eloquent\Model|self
-     */
-    public static function build(string $targetModelClass): self
+    public static function build(MetadataConfig $config): self
     {
-        $config = FKSMetadataConfigHelper::getModelConfig($targetModelClass);
-
         $reflection = new \ReflectionClass(
             new class () extends Metadata {
 
@@ -32,26 +28,38 @@ abstract class Metadata extends Model
                 public function __construct(array $attributes = [])
                 {
                     if (self::$config !== null) {
+                        $only = [
+                            self::$config->entityPrimaryKey,
+                            self::$config->primaryKey,
+                            self::$config->metadataKeyFieldName,
+                            self::$config->metadataValueFieldName,
+                        ];
+
+                        if (!self::$config->onlyMetadataKeys) {
+                            $only = array_merge(
+                                $only,
+                                [
+                                    'created_at',
+                                    'created_by',
+                                    'created_by_name',
+                                    'updated_at',
+                                    'updated_by',
+                                    'updated_by_name',
+                                ]
+                            );
+                        }
+
                         $storeAsJson = self::$config->storeValueAsJson;
                         $this->table = self::$config->table;
                         $this->primaryKey = self::$config->primaryKey;
                         $this->casts = [
                             self::$config->entityPrimaryKey => 'spanner_binary_uuid',
                             self::$config->primaryKey => 'spanner_binary_uuid',
-                            self::$config->metadataValueFieldName => MetadataValueCast::class
+                            self::$config->metadataValueFieldName => MetadataValueCast::class,
+                            'created_by' => 'spanner_binary_uuid',
+                            'updated_by' => 'spanner_binary_uuid',
                         ];
-                        self::$onlyFields = [
-                            self::$config->entityPrimaryKey,
-                            self::$config->primaryKey,
-                            self::$config->metadataKeyFieldName,
-                            self::$config->metadataValueFieldName,
-                            'created_at',
-                            'created_by',
-                            'created_by_name',
-                            'updated_at',
-                            'updated_by',
-                            'updated_by_name',
-                        ];
+                        self::$onlyFields = $only;
 
                         $this->visible = [
                             self::$config->entityPrimaryKey,

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace FKS\Repositories;
 
 use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\ClientInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
-use FKS\Contracts\FKSPaginatorInterface;
+use FKS\Contracts\SxopePaginatorInterface;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
 use FKS\Enums\SearchComponent\SearchDriversEnum;
-use FKS\Facades\FKSLogger;
+use FKS\Facades\SxopeLogger;
 use FKS\Services\ElasticSearch\ElasticSearchQueryBuilder;
 use FKS\ValueObjects\SearchConditions\SearchConditions;
 
@@ -21,7 +22,7 @@ abstract class ElasticSearchRepository
     protected abstract function getIndexName(): string;
 
     public function __construct(
-        protected Client $client,
+        protected ClientInterface $client,
     ) {
         $this->builder = new ElasticSearchQueryBuilder($this->getIndexName());
     }
@@ -73,7 +74,7 @@ abstract class ElasticSearchRepository
             $factory->setSearchDriver(SearchDriversEnum::ELASTICSEARCH);
             $queryBuilder = $factory->getQueryBuilder(get_class($condition));
             if (is_null($queryBuilder)) {
-                FKSLogger::warning(sprintf(
+                SxopeLogger::warning(sprintf(
                     'Could not find query builder for %s in %s driver',
                     get_class($condition),
                     SearchDriversEnum::ELASTICSEARCH->name
@@ -94,7 +95,7 @@ abstract class ElasticSearchRepository
         }
     }
 
-    protected function applyPagination($builder, FKSPaginatorInterface $paginate): void
+    protected function applyPagination($builder, SxopePaginatorInterface $paginate): void
     {
         $paginate->applyPagination($builder);
     }
@@ -111,6 +112,8 @@ abstract class ElasticSearchRepository
     {
         $this->applySearchConditions($builder, $searchConditions);
         $this->applyAdditionalSearchConditions($builder, $searchConditions);
+        $this->builder->offset(0);
+        $this->builder->limit(10000);
     }
 
     protected function applyAdditionalSearchConditions($builder, SearchConditions $searchConditions): void

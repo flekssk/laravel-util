@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace FKS\Services\ClassPropertiesParser;
 
-class ScalarClassProperty
+readonly class ScalarClassProperty
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $type,
-        public readonly bool $nullable = false,
+        public string $name,
+        public string $type,
+        public bool $nullable = false,
     ) {
     }
 }

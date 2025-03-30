@@ -6,8 +6,8 @@ namespace Tests;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
-use FKS\Services\Serializer\FKSSerializer;
-use FKS\Services\Serializer\FKSSerializerInterface;
+use FKS\Services\Serializer\Serializer;
+use FKS\Services\Serializer\SerializerInterface;
 
 trait CreatesApplication
 {
@@ -23,7 +23,7 @@ trait CreatesApplication
         );
 
         $app->make(Kernel::class)->bootstrap();
-        $app->bind(FKSSerializerInterface::class, FKSSerializer::class);
+        $app->bind(SerializerInterface::class, Serializer::class);
 
         config(['cache.default' => 'array']);
 

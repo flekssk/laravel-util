@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace FKS\Services\Metadata\Helpers;
 
+use FKS\Services\Serializer\SerializerFacade;
 use Illuminate\Database\Eloquent\Model;
 use FKS\Services\Metadata\MetadataConfig;
-use FKS\Services\Serializer\FKSSerializerFacade;
 
-class FKSMetadataConfigHelper
+class MetadataConfigHelper
 {
     private static array $loadedConfigs = [];
 
@@ -18,18 +18,21 @@ class FKSMetadataConfigHelper
     public static function getModelConfig(string $modelClass): MetadataConfig
     {
         if (!isset(self::$loadedConfigs[$modelClass])) {
-            $config = config("FKS-metadata.entities")[$modelClass] ?? null;
+            $config = config("metadata.entities")[$modelClass] ?? null;
 
             if ($config === null) {
                 throw new \Exception(
                     sprintf(
-                        'Models config for %s model not defined in config/FKS-metadata.php.',
+                        'Models config for %s model not defined in config/metadata.php.',
                         $modelClass,
                     )
                 );
             }
+            if (isset($config['mutators']) && is_array($config['mutators']) && $config['mutators'] !== []) {
+                $config['mutators'] = array_map(static fn (string $class) => app($class),$config['mutators']);
+            }
 
-            self::$loadedConfigs[$modelClass] = FKSSerializerFacade::deserializeFromArray($config, MetadataConfig::class);
+            self::$loadedConfigs[$modelClass] = SerializerFacade::deserializeFromArray($config, MetadataConfig::class);
         }
 
         return self::$loadedConfigs[$modelClass];

@@ -15,8 +15,8 @@ use Illuminate\Support\Str;
 use FKS\Http\Requests\RuleBuilders\TimestampRangeRuleBuilder;
 use FKS\Http\Requests\SortingRuleBuilders\Enums\SortAsEnum;
 use FKS\Services\Metadata\Enums\MetadataFilterTypeEnum;
-use FKS\Services\Serializer\FKSSerializer;
-use FKS\Services\Serializer\FKSSerializerInterface;
+use FKS\Services\Serializer\Serializer;
+use FKS\Services\Serializer\SerializerInterface;
 use FKS\ValueObjects\Id;
 use FKS\ValueObjects\SearchConditions\Conditions\Condition;
 use FKS\ValueObjects\SearchConditions\Conditions\ContainsCondition;
@@ -55,7 +55,7 @@ class RepositoryTest extends TestCase
                 ],
             ]
         );
-        $this->app->bind(FKSSerializerInterface::class, FKSSerializer::class);
+        $this->app->bind(SerializerInterface::class, Serializer::class);
         SpannerConnectionFaker::fake();
         $testRequest = new TestSearchRequest($requestData);
         $repository = new TestRepository();

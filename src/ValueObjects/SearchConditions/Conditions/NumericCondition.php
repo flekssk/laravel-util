@@ -8,9 +8,9 @@ use DomainException;
 
 class NumericCondition extends Condition
 {
-    public const TYPE_NUMERIC = 'numeric';
-    public const TYPE_INTEGER = 'integer';
-    public const TYPE_INTEGER_STRING = 'integer_string';
+    public const string TYPE_NUMERIC = 'numeric';
+    public const string TYPE_INTEGER = 'integer';
+    public const string TYPE_INTEGER_STRING = 'integer_string';
 
     public static function allowedTypes(): array
     {

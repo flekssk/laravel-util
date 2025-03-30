@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace FKS\Services\Metadata\Casts;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use FKS\Services\Metadata\Helpers\MetadataValueHelper;
+use FKS\Services\Metadata\Models\Metadata;
 
 class MetadataValueCast
 {
-    public function get(Model $model, string $key, mixed $value, array $attributes): mixed
+    public function get(Model|Metadata $model, string $key, mixed $value, array $attributes): mixed
     {
-        if (is_numeric($value)) {
-            return (int) $value;
-        }
 
-        if (Str::isJson($value)) {
-            return json_decode($value, true);
-        }
-
-        return $value;
+        return MetadataValueHelper::applyMutators(
+            $model->getConfig(),
+            $attributes[$model->getConfig()->metadataKeyFieldName],
+            MetadataValueHelper::fromString($value)
+        );
     }
 
     public function set(
@@ -28,14 +26,6 @@ class MetadataValueCast
         mixed $value,
         array $attributes
     ): mixed {
-        if (is_int($value)) {
-            return (string) $value;
-        }
-
-        if (is_array($value)) {
-            return json_encode($value, JSON_THROW_ON_ERROR);
-        }
-
-        return $value;
+        return MetadataValueHelper::toString($value);
     }
 }

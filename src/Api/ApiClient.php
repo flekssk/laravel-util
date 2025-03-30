@@ -6,8 +6,8 @@ namespace FKS\Api;
 
 use FKS\Api\DTO\ApiResponse;
 use FKS\Services\Serializer\FKSSerializerFacade;
-use FKS\Services\Serializer\FKSSerializerInterface;
-use FKS\Services\Serializer\FKSSimpleSerializer;
+use FKS\Services\Serializer\SerializerInterface;
+use FKS\Services\Serializer\SimpleSerializer;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
@@ -228,8 +228,8 @@ class ApiClient
         return $result;
     }
 
-    protected function getSerializerInstance(): FKSSerializerInterface
+    protected function getSerializerInstance(): SerializerInterface
     {
-        return app(FKSSimpleSerializer::class);
+        return app(SimpleSerializer::class);
     }
 }

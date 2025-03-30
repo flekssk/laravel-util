@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Repositories;
 
+use FKS\Repositories\Exceptions\RepositoryException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,8 +15,6 @@ use ReflectionClass;
 use ReflectionException;
 use FKS\Collections\EntitiesCollection;
 use FKS\Contracts\RepositoryInterface;
-use FKS\Exceptions\FKSRepositoryException;
-use FKS\Facades\FKS;
 use FKS\ValueObjects\Repository\WhereCondition;
 
 /**
@@ -25,12 +24,12 @@ use FKS\ValueObjects\Repository\WhereCondition;
  */
 abstract class Repository implements RepositoryInterface
 {
-    public const DEFAULT_CHUNK_LENGTH = 200;
+    public const int DEFAULT_CHUNK_LENGTH = 200;
 
     /**
      * @var ModelClass|Model
      */
-    public $entityInstance;
+    public Model $entityInstance;
     protected bool $isSoftDeleteExpected;
     protected bool $hasSoftDeletedTrait;
 
@@ -68,12 +67,12 @@ abstract class Repository implements RepositoryInterface
      * @param array|WhereCondition $where
      * @param int|null $limit
      * @param int|null $offset
+     * @param string|null $forceIndex
      * @return EntitiesCollection<ModelClass>
-     * @throws FKSRepositoryException
      */
-    public function getByWhere($where, ?int $limit = null, ?int $offset = null): Collection
+    public function getByWhere($where, ?int $limit = null, ?int $offset = null, ?string $forceIndex = null): Collection
     {
-        return $this->getQueryByWhere($where, $limit, $offset)->get();
+        return $this->getQueryByWhere($where, $limit, $offset, $forceIndex)->get();
     }
 
     /**
@@ -96,7 +95,6 @@ abstract class Repository implements RepositoryInterface
     /**
      * @param array|WhereCondition $where
      * @return bool
-     * @throws FKSRepositoryException
      */
     public function exists($where): bool
     {
@@ -113,11 +111,16 @@ abstract class Repository implements RepositoryInterface
         array $values,
         bool $returnUpdated = false,
         int $chunkLength = self::DEFAULT_CHUNK_LENGTH,
+        ?string $forceIndex = null
     ): int|Collection {
         $updatedCount = 0;
-        $updatedEntities = collect([]);
+        $updatedEntities = collect();
         $query = $this->getQuery();
         $this->applyWhere($where, $query);
+
+        if (!is_null($forceIndex)) {
+            $query->forceIndex($forceIndex);
+        }
 
         $query->chunkById($chunkLength, function ($data) use ($values, &$updatedCount, &$updatedEntities, $returnUpdated) {
             $primaryKey = $data->first()->getKeyName();
@@ -187,7 +190,6 @@ abstract class Repository implements RepositoryInterface
      * @param bool $returnDeleted
      * @param int $chunkSize
      * @return int|EntitiesCollection<ModelClass>
-     * @throws FKSRepositoryException
      */
     public function deleteByChunk(
         array|WhereCondition $where,
@@ -195,7 +197,7 @@ abstract class Repository implements RepositoryInterface
         int $chunkSize = self::DEFAULT_CHUNK_LENGTH
     ): Collection|int {
         $deletedCount = 0;
-        $deletedEntities = collect([]);
+        $deletedEntities = collect();
 
         $this->validateWhereStatement($where);
 
@@ -214,9 +216,7 @@ abstract class Repository implements RepositoryInterface
                 if ($this->isSoftDeleteExpected) {
                     $deletedCount += $getQuery->update(
                         [
-                            'deleted_at_day_id' => FKS::getCurrentDayId(),
                             'deleted_at' => Carbon::now('UTC'),
-                            'deleted_by' => FKS::getCurrentUserId(),
                         ]
                     );
                 } else {
@@ -232,7 +232,6 @@ abstract class Repository implements RepositoryInterface
      * @param bool $returnDeleted
      * @param int|null $limit
      * @return int|EntitiesCollection<ModelClass>
-     * @throws FKSRepositoryException
      */
     public function deleteByWhere(
         array|WhereCondition $where,
@@ -254,9 +253,7 @@ abstract class Repository implements RepositoryInterface
         if ($this->isSoftDeleteExpected) {
             $deletedCount = $query->update(
                 [
-                    'deleted_at_day_id' => FKS::getCurrentDayId(),
                     'deleted_at' => Carbon::now('UTC'),
-                    'deleted_by' => FKS::getCurrentUserId(),
                 ]
             );
         } else {
@@ -288,7 +285,7 @@ abstract class Repository implements RepositoryInterface
         $instance = $this->getByWhere($attributes)->first();
 
         if ($instance === null) {
-            $instance = (static::getEntityInstance())->fill(array_merge($attributes, $values, $createValues));
+            $instance = $this->getQuery()->getModel()->fill(array_merge($attributes, $values, $createValues));
             $instance->save();
         } else {
             $updateValues = array_merge($values, $updateValues);
@@ -371,10 +368,10 @@ abstract class Repository implements RepositoryInterface
      * @param $where
      * @param int|null $limit
      * @param int|null $offset
+     * @param string|null $forceIndex
      * @return Builder
-     * @throws FKSRepositoryException
      */
-    protected function getQueryByWhere($where, ?int $limit = null, ?int $offset = null): Builder
+    protected function getQueryByWhere($where, ?int $limit = null, ?int $offset = null, ?string $forceIndex = null): Builder
     {
         $this->validateWhereStatement($where);
 
@@ -391,18 +388,21 @@ abstract class Repository implements RepositoryInterface
             $query->offset($offset);
         }
 
+        if (!is_null($forceIndex)) {
+            $query->forceIndex($forceIndex);
+        }
+
         return $query;
     }
 
     /**
      * @param mixed $where
      * @return void
-     * @throws FKSRepositoryException
      */
     private function validateWhereStatement(mixed $where): void
     {
         if (!$where instanceof WhereCondition && !is_array($where)) {
-            throw FKSRepositoryException::invalidWhereExpression(get_debug_type($where));
+            throw RepositoryException::invalidWhereExpression(get_debug_type($where));
         }
     }
 

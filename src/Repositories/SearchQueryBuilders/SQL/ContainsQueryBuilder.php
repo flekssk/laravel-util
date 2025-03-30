@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FKS\Repositories\SearchQueryBuilders\Spanner;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
@@ -30,7 +31,11 @@ class ContainsQueryBuilder implements BuilderInterface
             if ($column instanceof ColumnParamMap) {
                 $filterParamParts = explode('.', $condition->getFilterParam());
                 if ($isRawQueryExpected && $condition->getType() !== ContainsCondition::TYPE_STRING) {
-                    $query->whereRaw("$column->tableName.$column->tableColumn = '$filterParamParts[1]'");
+                    $column = $column->tableColumn;
+                    if ( $condition->getType() === ContainsCondition::TYPE_BOOLEAN ) {
+                        $column = "SAFE_CAST($column as BOOLEAN)";
+                    }
+                    $query->whereRaw("$column->tableName.$column = '$filterParamParts[1]'");
                 } else {
                     $query->where($column->tableName . '.' . $column->tableColumn, $filterParamParts[1]);
                 }
@@ -38,9 +43,11 @@ class ContainsQueryBuilder implements BuilderInterface
             }
             if ($condition->isContains()) {
                 if ($condition->isInArray()) {
-                    $query->where(static function(Builder $builder) use($ids, $column, $condition) {
+                    $query->where(static function (Builder $builder) use ($ids, $column, $condition) {
                         foreach ($ids as $id) {
-                            if ($condition->isBytes()) {
+                            if ($condition->isStringArray === true) {
+                                $builder->orWhereRaw("$column LIKE '%\"$id\"%'");
+                            } elseif ($condition->isBytes()) {
                                 $id = Id::mapArrayValueToHexadecimal([$id]);
                                 $builder->whereRaw("$id[0] in unnest($column)");
                             } else {
@@ -51,28 +58,46 @@ class ContainsQueryBuilder implements BuilderInterface
                 } else {
                     if ($ids) {
                         if ($condition->isBytes()) {
-                            $query->whereRaw("$column IN (" . join(', ', Id::mapArrayValueToHexadecimal($ids)) .")");
+                            $query->whereRaw("$column IN (" . join(', ', Id::mapArrayValueToHexadecimal($ids)) . ")");
                         } else {
-
                             if ($isRawQueryExpected && $condition->getType() !== ContainsCondition::TYPE_STRING) {
                                 if ($condition->isBoolean()) {
-                                    $boolValue = $ids[0] ? 'TRUE' : 'FALSE';
-                                    $query->whereRaw("$column = $boolValue");
+                                    if (count($ids) === 1) {
+                                        $boolValue = $ids[0] ? 'TRUE' : 'FALSE';
+                                        $query->whereRaw("SAFE_CAST($column AS BOOLEAN) = $boolValue");
+                                    }
+                                } elseif ($condition->getType() === ContainsCondition::TYPE_HEX_STRING) {
+                                    $query->whereRaw("$column IN (\"" . join('", "', $ids) . '")');
                                 } else {
                                     $query->whereRaw("$column IN (" . join(', ', $ids) . ")");
                                 }
                             } else {
-                                $query->whereIn($column, $ids);
+                                if ($condition->isBoolean()) {
+                                    $boolValue = $ids[0] ? 'TRUE' : 'FALSE';
+                                    $query->where("SAFE_CAST($column as BOOLEAN)", $boolValue);
+                                } else if ($condition->isString() && $condition->isCaseInsensitive()) {
+                                    $query->whereIn(
+                                        DB::raw('LOWER('. $column .')'),
+                                        array_map(fn ($id) => strtolower($id), $ids)
+                                    );
+                                } else {
+                                    $query->whereIn($column, $ids);
+                                }
                             }
                         }
                     }
                 }
                 if ($filterHasNullValue) {
+                    $stringTypes = [ContainsCondition::TYPE_STRING];
+                    if (in_array($condition->getType(), $stringTypes)) {
+                        $query->orWhere($column, '');
+                    }
+
                     $query->orWhereNull($column);
                 }
             } else {
                 if ($condition->isInArray()) {
-                    $query->where(static function(Builder $builder) use($ids, $column, $condition) {
+                    $query->where(static function (Builder $builder) use ($ids, $column, $condition) {
                         foreach ($ids as $id) {
                             if ($condition->isBytes()) {
                                 $id = Id::create($id)->getHexadecimal();
@@ -84,10 +109,10 @@ class ContainsQueryBuilder implements BuilderInterface
                 } else {
                     if ($ids) {
                         if ($condition->isBytes()) {
-                            $query->whereRaw("$column NOT IN (" . join(', ', Id::mapArrayValueToHexadecimal($ids)) .")");
+                            $query->whereRaw("$column NOT IN (" . join(', ', Id::mapArrayValueToHexadecimal($ids)) . ")");
                         } else {
                             if ($isRawQueryExpected && $condition->getType() !== ContainsCondition::TYPE_STRING) {
-                                $query->whereRaw("$column NOT IN (" . join(', ', $ids) .")");
+                                $query->whereRaw("$column NOT IN (" . join(', ', $ids) . ")");
                             } else {
                                 $query->whereNotIn($column, $ids);
                             }
@@ -121,6 +146,9 @@ class ContainsQueryBuilder implements BuilderInterface
 
         if ($condition->isBytes()) {
             $values = Id::batchCreate($values);
+        }
+        if ($condition->isString()) {
+            $values = array_map(static fn($item) => (string) $item, $values);
         }
         if ($condition->isInteger()) {
             $values = array_map(static fn($item) => (int) $item, $values);

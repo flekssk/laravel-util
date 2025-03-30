@@ -6,7 +6,6 @@ namespace FKS\Repositories\ActivityLog;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use FKS\Exceptions\FKSDomainException;
 use FKS\Repositories\SearchRepository;
 use FKS\ValueObjects\SearchConditions\SearchConditions;
 
@@ -43,10 +42,10 @@ class ActivityLogRepository extends SearchRepository
 
     public static function getEntityInstance(): Model
     {
-        $class = config('FKS-activity-log.activity-log-model-class');
+        $class = config('activity-log.activity-log-model-class');
 
         if (!is_a($class, Model::class, true)) {
-            throw new FKSDomainException('FKS-activity-log.activity-log-model-class must be Model class string');
+            throw new \DomainException('activity-log.activity-log-model-class must be Model class string');
         }
 
         return new $class();

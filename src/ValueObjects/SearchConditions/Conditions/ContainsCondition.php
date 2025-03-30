@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace FKS\ValueObjects\SearchConditions\Conditions;
 
+use RuntimeException;
+
 class ContainsCondition extends Condition
 {
-    public const TYPE_BYTES = 'uuid_or_hex';
-    public const TYPE_HEX_STRING = 'hex_string';
-    public const TYPE_INTEGER = 'integer';
-    public const TYPE_STRING = 'string';
-    public const TYPE_INTEGER_IN_ARRAY = 'integer_in_array';
-    public const TYPE_BYTES_IN_ARRAY = 'bytes_in_array';
-    public const TYPE_BOOLEAN = 'boolean';
+    public const string TYPE_BYTES = 'uuid_or_hex';
+    public const string TYPE_HEX_STRING = 'hex_string';
+    public const string TYPE_INTEGER = 'integer';
+    public const string TYPE_STRING = 'string';
+    public const string TYPE_INTEGER_IN_ARRAY = 'integer_in_array';
+    public const string TYPE_BYTES_IN_ARRAY = 'bytes_in_array';
+    public const string TYPE_BOOLEAN = 'boolean';
 
     private array $values;
     private bool $contains;
@@ -33,7 +35,7 @@ class ContainsCondition extends Condition
     public function __construct(string $filterParam, array $values, bool $contains, string $type)
     {
         if (!in_array($type, self::allowedTypes(), true)) {
-            throw new \RuntimeException("Bad type '$type'. Allowed only: " . implode(', ', self::allowedTypes()));
+            throw new RuntimeException("Bad type '$type'. Allowed only: " . implode(', ', self::allowedTypes()));
         }
         $this->filterParam = $filterParam;
         $this->values = $values;

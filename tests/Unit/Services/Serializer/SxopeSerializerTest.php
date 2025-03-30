@@ -7,8 +7,8 @@ namespace Tests\Unit\Services\Serializer;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\TestCase;
 use FKS\Services\Serializer\Elements\ArrayItem;
-use FKS\Services\Serializer\FKSSerializer;
-use FKS\Services\Serializer\FKSSimpleSerializer;
+use FKS\Services\Serializer\Serializer;
+use FKS\Services\Serializer\SimpleSerializer;
 use FKS\ValueObjects\Id;
 use Tests\Provisions\Serializer\TestObject;
 use Tests\Provisions\Serializer\TestValueObject;
@@ -55,7 +55,7 @@ class FKSSerializerTest extends TestCase
             ],
         ];
 
-        $result = (new FKSSerializer())->deserializeFromJson(
+        $result = (new Serializer())->deserializeFromJson(
             json_encode($data, JSON_THROW_ON_ERROR),
             TestValueObjectCollection::class,
         );
@@ -89,7 +89,7 @@ class FKSSerializerTest extends TestCase
 
         $data['items'][0]['value_objects_value'] = null;
 
-        $result = (new FKSSerializer())->deserializeFromJson(
+        $result = (new Serializer())->deserializeFromJson(
             json_encode($data, JSON_THROW_ON_ERROR),
             TestValueObjectCollection::class,
         );
@@ -123,7 +123,7 @@ class FKSSerializerTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        (new FKSSimpleSerializer())->deserializeFromJson(
+        (new SimpleSerializer())->deserializeFromJson(
             json_encode($data, JSON_THROW_ON_ERROR),
             TestValueObjectCollection::class,
             $propertiesMapping

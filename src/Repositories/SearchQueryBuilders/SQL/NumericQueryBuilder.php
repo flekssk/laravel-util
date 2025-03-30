@@ -18,10 +18,11 @@ class NumericQueryBuilder implements BuilderInterface
     {
         $value = $condition->getValue();
 
+        if ($column instanceof ColumnParamMap) {
+            $column = "$column->tableName.$column->tableColumn";
+        }
+
         if (SearchComponentConfigHelper::isUseRawQueryStatements() || $condition->isString()) {
-            if ($condition->isString()) {
-                $column = "SAFE_CAST(task_metadata_value AS INT64)";
-            }
             $builder->whereRaw("$column {$condition->getMathematicalOperator()} $value ");
         } else {
             $builder->where($column, $condition->getMathematicalOperator(), $value);

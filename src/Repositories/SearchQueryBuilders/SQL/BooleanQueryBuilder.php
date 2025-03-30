@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace FKS\Repositories\SearchQueryBuilders\Spanner;
 
-use Illuminate\Database\Query\Builder;
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;

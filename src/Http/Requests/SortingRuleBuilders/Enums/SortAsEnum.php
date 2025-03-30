@@ -12,4 +12,5 @@ enum SortAsEnum: string
 
     case INTEGER = 'integer';
     case FLOAT = 'float';
+    case TIMESTAMP = 'timestamp';
 }

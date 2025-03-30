@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\Serializer;
 
 use PHPUnit\Framework\TestCase;
 use FKS\Services\Serializer\Elements\ArrayItem;
-use FKS\Services\Serializer\FKSSimpleSerializer;
+use FKS\Services\Serializer\SimpleSerializer;
 use Tests\Provisions\Serializer\TestObject;
 use Tests\Provisions\Serializer\TestValueObject;
 use Tests\Provisions\Serializer\TestValueObjectCollection;
@@ -32,7 +32,7 @@ class SimpleSerializerTest extends TestCase
             ]
         ];
 
-        $result = (new FKSSimpleSerializer())->deserializeFromJson(
+        $result = (new SimpleSerializer())->deserializeFromJson(
             json_encode($data, JSON_THROW_ON_ERROR),
             TestValueObjectCollection::class,
             [
@@ -80,7 +80,7 @@ class SimpleSerializerTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        (new FKSSimpleSerializer())->deserializeFromJson(
+        (new SimpleSerializer())->deserializeFromJson(
             json_encode($data, JSON_THROW_ON_ERROR),
             TestValueObjectCollection::class,
             $propertiesMapping

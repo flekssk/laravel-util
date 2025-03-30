@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace FKS\Services\Metadata\DTO;
 
-class MetadataValueDTO
+readonly class MetadataValueDTO
 {
     public function __construct(
-        public readonly string $taskMetadataKey,
-        public readonly mixed $taskMetadataValue,
+        public string $metadataKey,
+        public mixed $metadataValue,
     ) {
     }
 }

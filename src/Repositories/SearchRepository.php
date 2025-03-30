@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace FKS\Repositories;
 
+use Exception;
 use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
 use FKS\Collections\EntitiesCollection;
-use FKS\Contracts\FKSPaginatorInterface;
+use FKS\Contracts\SxopePaginatorInterface;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
-use FKS\Http\Requests\SortingRuleBuilders\Enums\SortAsEnum;
+use FKS\Factories\ColumnParamFactory;
+use FKS\Repositories\DTO\CountsResultDTO;
 use FKS\ValueObjects\SearchConditions\Conditions\Condition;
-use FKS\ValueObjects\SearchConditions\Pagination;
 use FKS\ValueObjects\SearchConditions\SearchConditions;
 
 abstract class SearchRepository extends Repository
@@ -38,14 +38,68 @@ abstract class SearchRepository extends Repository
         SearchConditions $conditions,
         BuilderContract $preparedBuilder = null,
         bool $returnBuilder = false,
+        bool $skipSorting = false
     ): BuilderContract|EntitiesCollection|bool|Collection|null {
         if (is_null($preparedBuilder)) {
             $preparedBuilder = $this->getNewModelQuery();
         }
 
-        $this->applyAllConditions($preparedBuilder, $conditions);
+        $this->applyAllConditions($preparedBuilder, $conditions, $skipSorting);
 
         return $returnBuilder ? $preparedBuilder : $this->getByQuery($preparedBuilder);
+    }
+
+    public function counts(
+        SearchConditions $searchConditions,
+        BuilderContract $preparedBuilder = null,
+        bool $returnBuilder = false
+    ): BuilderContract|CountsResultDTO {
+        if (is_null($preparedBuilder)) {
+            $preparedBuilder = $this->getQuery();
+        }
+
+        $selectFieldsToGroupByString = '';
+        if (!empty($searchConditions->getAvailableFields())) {
+            foreach ($searchConditions->getAvailableFields() as $availableField) {
+                $mappedAvailableField = self::getMapFilterParamToColumn()[$availableField] ?? $availableField;
+                $availableFieldForSelect = self::getMapFilterParamToColumn()[$availableField] ??  static::getEntityInstance()->getTable() . '.' . $availableField;
+                $selectFieldsToGroupByString .= $availableFieldForSelect . ',';
+                $preparedBuilder->groupBy($mappedAvailableField);
+            }
+        }
+
+        $preparedBuilder->selectRaw($selectFieldsToGroupByString . 'COUNT(*) AS count');
+        $this->applyAllConditionsForCounts($preparedBuilder, $searchConditions);
+
+        if ($returnBuilder) {
+            return $preparedBuilder;
+        }
+
+        $totalCounts = 0;
+        $list = new Collection();
+        $counts = $preparedBuilder->get();
+
+        if (!empty($searchConditions->getAvailableFields())) {
+            foreach ($counts as $item) {
+                $onlyData = $item->only($searchConditions->getAvailableFields());
+                $onlyData['count'] = $item['count'];
+                $list->add($onlyData);
+                $totalCounts += $item['count'];
+            }
+        } else {
+            $totalCounts = $counts[0]['count'];
+        }
+
+        return new CountsResultDTO($totalCounts, $list->toArray());
+    }
+
+    public function getSortFieldDefinition(array $sortDefinition)
+    {
+        $tableName = $this->extractTableNameFrom($sortDefinition['field']);
+
+        return static::getMapSortFieldToColumn()[$tableName]
+            ?? static::getMapSortFieldToColumn()[$sortDefinition['field']]
+            ?? $sortDefinition['field'];
     }
 
     protected function getJoinsDefinitions(): array
@@ -58,11 +112,6 @@ abstract class SearchRepository extends Repository
         return [];
     }
 
-    /**
-     * @param Builder|\Illuminate\Database\Eloquent\Builder $builder
-     * @param SearchConditions $searchConditions
-     * @return void
-     */
     protected function applySearchConditions($builder, SearchConditions $searchConditions): void
     {
         foreach ($searchConditions->getFilter() as $condition) {
@@ -89,48 +138,23 @@ abstract class SearchRepository extends Repository
      * @param Builder|\Illuminate\Database\Eloquent\Builder $builder
      * @param SearchConditions $searchConditions
      * @return void
+     * @throws Exception
      */
     protected function applySorting($builder, SearchConditions $searchConditions): void
     {
-        foreach ($searchConditions->getSort() as $sortItem) {
-            $sortAs = SortAsEnum::tryFrom($sortItem['sort_as'] ?? '');
-            $direction = $sortItem['direction'];
-            $fieldParts = explode('.', $sortItem['field']);
-            $sortingTableName = array_shift($fieldParts);
-            $sortingTableColumnName = array_shift($fieldParts);
-            $field = static::getMapSortFieldToColumn()[$sortingTableName]
-                ?? static::getMapSortFieldToColumn()[$sortItem['field']]
-                ?? $sortItem['field'];
-
-            if ($field instanceof ColumnParamMap) {
-                if ($field->tableValuesColumn !== null) {
-                    $builder->where($field->tableName . '.' . $field->tableColumn, $sortingTableColumnName);
-                }
-                $field = $field->tableName . '.' . $field->tableValuesColumn;
-            }
-
-            if ($field instanceof ColumnParamRaw) {
-                $field = DB::raw($field->raw);
-            }
-
-            if ($sortAs !== null) {
-                $castAs = match ($sortAs) {
-                    SortAsEnum::INTEGER => 'INT64',
-                    SortAsEnum::FLOAT => 'FLOAT64',
-                };
-                $builder->orderByRaw("SAFE_CAST($field as $castAs) $direction");
-            } else {
-                $builder->orderBy($field, $direction);
-            }
+        foreach ($searchConditions->getSort() as $sortDefinition) {
+            $columnParam = ColumnParamFactory::create($this->getSortFieldDefinition($sortDefinition));
+            $columnParam->applySortConditions($builder, $sortDefinition);
+            $columnParam->applySort($builder, $sortDefinition);
         }
     }
 
     /**
      * @param $builder
-     * @param Pagination $paginate
+     * @param SxopePaginatorInterface $paginate
      * @return void
      */
-    protected function applyPagination($builder, FKSPaginatorInterface $paginate): void
+    protected function applyPagination($builder, SxopePaginatorInterface $paginate): void
     {
         $paginate->applyPagination($builder);
     }
@@ -139,13 +163,18 @@ abstract class SearchRepository extends Repository
      * @param $builder
      * @param SearchConditions $searchConditions
      * @return void
+     * @throws Exception
      */
-    protected function applyAllConditions($builder, SearchConditions $searchConditions): void
+    protected function applyAllConditions($builder, SearchConditions $searchConditions, bool $skipSorting = false): void
     {
         $this->applyJoins($builder, $searchConditions);
         $this->applySearchConditions($builder, $searchConditions);
-        $this->applySorting($builder, $searchConditions);
-        $this->applyPagination($builder, $searchConditions->getPagination());
+        if (!$skipSorting) {
+            $this->applySorting($builder, $searchConditions);
+        }
+        if ($searchConditions->getPagination() !== null) {
+            $this->applyPagination($builder, $searchConditions->getPagination());
+        }
         $this->applyAdditionalSearchConditions($builder, $searchConditions);
     }
 
@@ -184,7 +213,7 @@ abstract class SearchRepository extends Repository
      */
     protected function applyJoins($builder, SearchConditions $searchConditions): void
     {
-        $needApply = static function ($key) use ($searchConditions): bool {
+        $needApply = static function ($key) use ($searchConditions, $builder): bool {
             foreach ($searchConditions->getSort() as ['field' => $field]) {
                 $columnParts = explode('.', $field);
                 $joinParamsKey = array_shift($columnParts);
@@ -206,6 +235,16 @@ abstract class SearchRepository extends Repository
                 $column = $column instanceof ColumnParamMap ? $column->tableName . '.' . $column->tableColumn : $column;
                 if (str_starts_with($column, "$key.")) {
                     return true;
+                }
+            }
+
+            $columns = $builder?->getQuery()?->columns ?? [];
+            foreach ($columns as $column) {
+                if(is_string($column)) {
+                    $columnParts = explode('.', $column);
+                    if ($columnParts[0] === $key) {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -234,5 +273,12 @@ abstract class SearchRepository extends Repository
         }
 
         return $rows;
+    }
+
+    private function extractTableNameFrom(string $sortField): ?string
+    {
+        $fieldParts = explode('.', $sortField);
+
+        return array_shift($fieldParts);
     }
 }

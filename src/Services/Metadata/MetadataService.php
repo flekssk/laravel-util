@@ -7,13 +7,15 @@ namespace FKS\Services\Metadata;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use FKS\Facades\FKS;
+use FKS\Helpers\Metadata\SxopeArrayDifferentiator;
+use FKS\Services\Metadata\Collection\MetadataDiffCollection;
 use FKS\Services\Metadata\DTO\MetadataAggregationResultDTO;
 use FKS\Services\Metadata\DTO\MetadataCreateDTO;
 use FKS\Services\Metadata\DTO\MetadataValueDTO;
 use FKS\Services\Metadata\Enums\MetadataAggregationTypeEnum;
 use FKS\Services\Metadata\Enums\MetadataAggregationValueTypeEnum;
-use FKS\Services\Metadata\Helpers\FKSMetadataConfigHelper;
+use FKS\Services\Metadata\Helpers\MetadataConfigHelper;
+use FKS\Services\Metadata\Helpers\MetadataValueHelper;
 use FKS\Services\Metadata\Models\Metadata;
 use FKS\Services\Metadata\Repositories\MetadataRepository;
 use FKS\ValueObjects\Id;
@@ -23,18 +25,22 @@ use FKS\ValueObjects\Id;
  */
 abstract class MetadataService
 {
+    use SxopeArrayDifferentiator;
+
     public MetadataRepository $repository;
+    public MetadataConfig $config;
 
     abstract public static function getEntity(): string;
 
     public function __construct()
     {
+        $this->config = MetadataConfigHelper::getModelConfig(static::getEntity());
         $this->repository = $this->buildRepository();
     }
 
     public function getConfig(): MetadataConfig
     {
-        return FKSMetadataConfigHelper::getModelConfig(static::getEntity());
+        return $this->config;
     }
 
     /**
@@ -48,18 +54,103 @@ abstract class MetadataService
         return $query->get();
     }
 
-    public function upsertMetadataChunk(Id $entityId, array $metadataValues, Id $userId): void
+    public function upsertMetadataChunk(Id $entityId, array $metadataValues, Id $userId): MetadataDiffCollection
     {
+        $diff = [];
+        $existedMetadata = $this->repository
+            ->getQuery()
+            ->where($this->config->entityPrimaryKey, $entityId)
+            ->whereIn(
+                $this->config->metadataKeyFieldName,
+                collect($metadataValues)
+                    ->map(
+                        function ($metadataValue, $metadataKey) {
+                            if ($metadataValue instanceof MetadataValueDTO) {
+                                $metadataKey = $metadataValue->metadataKey;
+                            }
+                            return $metadataKey;
+                        }
+                    )
+            )
+            ->get();
+
+        $metadataValueFieldName = $this->config->metadataValueFieldName;
+        $metadataKeyFieldName = $this->config->metadataKeyFieldName;
         foreach ($metadataValues as $metadataKey => $metadataValue) {
-            $this->upsertMetadata(
-                new MetadataCreateDTO(
+            if ($metadataValue instanceof MetadataValueDTO) {
+                $metadataKey = $metadataValue->metadataKey;
+                $metadataValue = $metadataValue->metadataValue;
+            }
+            $metadata = $existedMetadata->where($metadataKeyFieldName, $metadataKey)->first();
+            if ($metadata === null) {
+                $diff[$metadataKey] = [
+                    'old_value' => '',
+                    'new_value' => MetadataValueHelper::toString($metadataValue),
+                ];
+                $this->create(
                     $entityId,
-                    $metadataKey,
-                    $metadataValue,
+                    new MetadataValueDTO(
+                        $metadataKey,
+                        $metadataValue,
+                    ),
                     $userId,
-                )
-            );
+                );
+            } elseif ($this->areDifferent(
+                MetadataValueHelper::toString($metadata->$metadataValueFieldName),
+                MetadataValueHelper::toString(
+                    MetadataValueHelper::applyMutators($this->getConfig(), $metadataKey, $metadataValue))
+            )
+            ) {
+                $diff[$metadataKey] = [
+                    'old_value' => MetadataValueHelper::toString($metadata->$metadataValueFieldName),
+                    'new_value' => MetadataValueHelper::toString(
+                        MetadataValueHelper::applyMutators($this->getConfig(), $metadataKey, $metadataValue)
+                    ),
+                ];
+                $this->update(
+                    Id::create($metadata->{$this->config->primaryKey}),
+                    $entityId,
+                    new MetadataValueDTO(
+                        $metadataKey,
+                        $metadataValue,
+                    ),
+                    $userId,
+                );
+            }
         }
+
+        return new MetadataDiffCollection($diff);
+    }
+
+    public function create(Id $entityId, MetadataValueDTO $metadataValue, Id $userId): void
+    {
+        $this->repository->create(
+            [
+                $this->config->entityPrimaryKey => $entityId,
+                $this->config->metadataKeyFieldName => $metadataValue->metadataKey,
+                $this->config->metadataValueFieldName => MetadataValueHelper::toString($metadataValue->metadataValue),
+                'created_at_day_id' => Sxope::getCurrentDayId(),
+                'created_at' => Carbon::now('UTC')->format('c'),
+                'created_by' => $userId,
+            ]
+        );
+    }
+
+    public function update(Id $metadataId, Id $entityId, MetadataValueDTO $metadataValue, Id $userId): void
+    {
+        $this->repository->updateByWhere(
+            [
+                $this->config->primaryKey => $metadataId,
+                $this->config->entityPrimaryKey => $entityId,
+                $this->config->metadataKeyFieldName => $metadataValue->metadataKey,
+            ],
+            [
+                $this->config->metadataValueFieldName => MetadataValueHelper::toString($metadataValue->metadataValue),
+                'updated_at_day_id' => Sxope::getCurrentDayId(),
+                'updated_at' => Carbon::now('UTC')->format('c'),
+                'updated_by' => $userId,
+            ]
+        );
     }
 
     public function upsertMetadata(MetadataCreateDTO $metadataCreateDTO): Metadata
@@ -74,12 +165,12 @@ abstract class MetadataService
                 $config->metadataValueFieldName => $metadataCreateDTO->metadataValue,
             ],
             [
-                'created_at_day_id' => FKS::getCurrentDayId(),
+                'created_at_day_id' => Sxope::getCurrentDayId(),
                 'created_at' => Carbon::now('UTC')->format('c'),
                 'created_by' => $metadataCreateDTO->userId,
             ],
             [
-                'updated_at_day_id' => FKS::getCurrentDayId(),
+                'updated_at_day_id' => Sxope::getCurrentDayId(),
                 'updated_at' => Carbon::now('UTC')->format('c'),
                 'updated_by' => $metadataCreateDTO->userId,
             ]
@@ -90,13 +181,14 @@ abstract class MetadataService
         Builder $builder,
         string $metadataKey,
         MetadataAggregationTypeEnum $aggregation,
-        MetadataAggregationValueTypeEnum $valueType
+        MetadataAggregationValueTypeEnum $valueType,
+        SpannerJoinMethodsEnum $joinMethod = null
     ): MetadataAggregationResultDTO {
         return new MetadataAggregationResultDTO(
             $metadataKey,
             $aggregation,
             $valueType,
-            $this->repository->aggregate($builder, $metadataKey, $aggregation, $valueType),
+            $this->repository->aggregate($builder, $metadataKey, $aggregation, $valueType, $joinMethod),
         );
     }
 
@@ -119,31 +211,29 @@ abstract class MetadataService
         return $query;
     }
 
-    private function buildRepository(): MetadataRepository
+    public function buildRepository(bool $recreate = false, bool $onlyMetadataKeys = false): MetadataRepository
     {
-        if (isset($this->repository)) {
-            return $this->repository;
-        }
+        $this->config->onlyMetadataKeys = $onlyMetadataKeys;
 
-        return new class (static::getEntity(), $this->getConfig()) extends MetadataRepository {
+        return new class (static::getEntity(), $this->config) extends MetadataRepository {
             public static string $entityClass;
-            public static MetadataConfig $config;
+            public MetadataConfig $config;
 
             public function __construct(string $modelClass, MetadataConfig $config)
             {
                 self::$entityClass = $modelClass;
-                self::$config = $config;
+                $this->config = $config;
                 parent::__construct();
+            }
+
+            public function getConfig(): MetadataConfig
+            {
+                return $this->config;
             }
 
             public static function getEntityInstance(): Metadata
             {
-                return Metadata::build(self::$entityClass);
-            }
-
-            public static function getConfig(): MetadataConfig
-            {
-                return self::$config;
+                return Metadata::build(MetadataConfigHelper::getModelConfig(self::$entityClass));
             }
         };
     }
