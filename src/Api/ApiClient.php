@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace FKS\Api;
 
 use FKS\Api\DTO\ApiResponse;
-use FKS\Services\Serializer\FKSSerializerFacade;
+use FKS\Api\DTO\MergableApiResponseInterface;
+use FKS\Services\Serializer\Serializer;
 use FKS\Services\Serializer\SerializerInterface;
-use FKS\Services\Serializer\SimpleSerializer;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
@@ -215,8 +215,8 @@ class ApiClient
         do {
             $data = $request($page, $limit);
 
-            if ($data instanceof ApiResponse) {
-                $respondedCount = count($data->data);
+            if ($data instanceof MergableApiResponseInterface) {
+                $respondedCount = $data->count();
                 $result = $result ? $data->mergeData($result) : $data;
             } else {
                 $respondedCount = count($data);
@@ -230,6 +230,6 @@ class ApiClient
 
     protected function getSerializerInstance(): SerializerInterface
     {
-        return app(SimpleSerializer::class);
+        return app(Serializer::class);
     }
 }

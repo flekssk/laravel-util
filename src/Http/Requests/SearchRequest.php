@@ -2,11 +2,11 @@
 
 namespace FKS\Http\Requests;
 
+use FKS\Contracts\PaginatorInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use FKS\Collections\SearchConditionsCollection;
-use FKS\Contracts\FKSPaginatorInterface;
 use FKS\Http\Requests\RuleBuilders\RuleBuilder;
 use FKS\Http\Requests\SortingRuleBuilders\Enums\SortAsEnum;
 use FKS\ValueObjects\SearchConditions\SearchConditions;
@@ -24,7 +24,7 @@ abstract class SearchRequest extends FormRequest
 
     public function rules(): array
     {
-        $paginatorInstance = app(FKSPaginatorInterface::class);
+        $paginatorInstance = app(PaginatorInterface::class);
         $rules = [
             'available_fields' => [
                 static::getAvailableFields() !== [] ? 'required' : 'nullable',
@@ -127,7 +127,7 @@ abstract class SearchRequest extends FormRequest
     public function getSearchConditions(): SearchConditions
     {
         $filter = new SearchConditionsCollection();
-        $paginatorInstance = app(FKSPaginatorInterface::class);
+        $paginatorInstance = app(PaginatorInterface::class);
         $requestFilters = Arr::get($this->all(), 'filter', []);
 
         /** @var RuleBuilder $builder */

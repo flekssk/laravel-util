@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace FKS\Providers;
 
+use FKS\Contracts\PaginatorInterface;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Ramsey\Uuid\Uuid;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
-use FKS\Contracts\FKSPaginatorInterface;
 use FKS\Enums\SearchComponent\SearchDriversEnum;
 use FKS\Factories\SearchQueryBuilderFactory;
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
-use FKS\ValueObjects\SearchConditions\PerPagePaginator;
 use Throwable;
 
 class SearchComponentProvider extends ServiceProvider
@@ -25,7 +24,7 @@ class SearchComponentProvider extends ServiceProvider
             });
         });
 
-        $this->app->bind(FKSPaginatorInterface::class, SearchComponentConfigHelper::getPaginatorClass());
+        $this->app->bind(PaginatorInterface::class, SearchComponentConfigHelper::getPaginatorClass());
     }
 
     public function boot()

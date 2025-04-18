@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FKS\Api\DTO;
 
-use FKS\Services\Serializer\DTO\SerializableDTO;
+use FKS\Services\Serializer\SerializableObject;
 
-class ApiResponse extends SerializableDTO
+class ApiResponse extends SerializableObject
 {
     public mixed $data;
 

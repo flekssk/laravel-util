@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace FKS\Repositories;
 
 use Exception;
+use FKS\Contracts\PaginatorInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use FKS\Collections\EntitiesCollection;
-use FKS\Contracts\SxopePaginatorInterface;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
 use FKS\Factories\ColumnParamFactory;
 use FKS\Repositories\DTO\CountsResultDTO;
@@ -149,12 +149,7 @@ abstract class SearchRepository extends Repository
         }
     }
 
-    /**
-     * @param $builder
-     * @param SxopePaginatorInterface $paginate
-     * @return void
-     */
-    protected function applyPagination($builder, SxopePaginatorInterface $paginate): void
+    protected function applyPagination($builder, PaginatorInterface $paginate): void
     {
         $paginate->applyPagination($builder);
     }

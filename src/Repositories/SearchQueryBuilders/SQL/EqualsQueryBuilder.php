@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\Spanner;
+namespace FKS\Repositories\SearchQueryBuilders\SQL;
 
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;

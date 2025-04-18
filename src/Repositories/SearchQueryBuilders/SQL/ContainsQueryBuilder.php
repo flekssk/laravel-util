@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\Spanner;
+namespace FKS\Repositories\SearchQueryBuilders\SQL;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;

@@ -2,10 +2,10 @@
 
 namespace FKS\ValueObjects\SearchConditions;
 
-use FKS\Contracts\FKSPaginatorInterface;
+use FKS\Contracts\PaginatorInterface;
 use FKS\Http\Requests\SearchRequest;
 
-class LimitOffsetPaginator implements FKSPaginatorInterface
+class LimitOffsetPaginator implements PaginatorInterface
 {
     private int $limit;
     private int $offset;

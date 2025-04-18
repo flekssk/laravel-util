@@ -287,6 +287,8 @@ abstract class Repository implements RepositoryInterface
         if ($instance === null) {
             $instance = $this->getQuery()->getModel()->fill(array_merge($attributes, $values, $createValues));
             $instance->save();
+
+            return $instance;
         } else {
             $updateValues = array_merge($values, $updateValues);
 
@@ -303,6 +305,7 @@ abstract class Repository implements RepositoryInterface
                 $instance->fill(array_merge($values, $updateValues))
                     ->save();
             }
+            $instance->existed = true;
         }
 
         return $instance;

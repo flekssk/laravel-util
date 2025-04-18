@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\Spanner;
+namespace FKS\Repositories\SearchQueryBuilders\SQL;
 
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
@@ -18,7 +19,6 @@ use FKS\ValueObjects\SearchConditions\Conditions\EmptyOrNullCondition;
 use FKS\ValueObjects\SearchConditions\Conditions\MetadataCondition;
 use FKS\ValueObjects\SearchConditions\Conditions\NumericCondition;
 use FKS\ValueObjects\SearchConditions\Conditions\SearchCondition;
-use Tests\Provisions\Database\Spanner\Query\SpannerJoinClause as TestSpannerJoinClause;
 
 class MetadataQueryBuilder implements BuilderInterface
 {
@@ -89,10 +89,7 @@ class MetadataQueryBuilder implements BuilderInterface
             $builder->$joinMethod(
                 $subJoin,
                 'TEMP',
-                static function (SpannerJoinClause|TestSpannerJoinClause $join) use ($config, $condition) {
-                    if ($condition->applyHashJoin) {
-                        $join->joinMethod(SpannerJoinMethodsEnum::JOIN_METHOD_HASH_JOIN->value);
-                    }
+                static function (JoinClause $join) use ($config, $condition) {
                     $join->on("TEMP.$config->entityPrimaryKey", "$config->entityTable.$config->entityPrimaryKey");
                 }
             );

@@ -6,31 +6,18 @@ namespace FKS\ValueObjects\SearchConditions;
 
 use Illuminate\Support\Collection;
 use FKS\Collections\SearchConditionsCollection;
-use FKS\Contracts\FKSPaginatorInterface;
+use FKS\Contracts\PaginatorInterface;
 
 final class SearchConditions
 {
-    private array $availableFields;
-    private SearchConditionsCollection $filter;
-    private Collection $additionalParams;
-    private bool $onlyCounter;
-    private Collection $sort;
-    private FKSPaginatorInterface $pagination;
-
     public function __construct(
-        array $availableFields,
-        SearchConditionsCollection $filter,
-        Collection $additionalParams,
-        bool $onlyCounter,
-        Collection $sort,
-        FKSPaginatorInterface $pagination
+        private array $availableFields,
+        private readonly SearchConditionsCollection $filter,
+        private readonly Collection $additionalParams,
+        private readonly bool $onlyCounter,
+        private readonly Collection $sort,
+        private readonly PaginatorInterface $pagination,
     ) {
-        $this->availableFields = $availableFields;
-        $this->filter = $filter;
-        $this->additionalParams = $additionalParams;
-        $this->onlyCounter = $onlyCounter;
-        $this->sort = $sort;
-        $this->pagination = $pagination;
     }
 
     public function getAvailableFields(): array
@@ -58,7 +45,7 @@ final class SearchConditions
         return $this->sort;
     }
 
-    public function getPagination(): FKSPaginatorInterface
+    public function getPagination(): PaginatorInterface
     {
         return $this->pagination;
     }
