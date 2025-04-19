@@ -6,13 +6,14 @@ use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
 use FKS\ValueObjects\SearchConditions\Conditions\DateRangeCondition;
+use Illuminate\Database\Query\Builder;
 
 class DateRangeQueryBuilder implements BuilderInterface
 {
     /**
      * @param DateRangeCondition $condition
      */
-    public function applyCondition($builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $isRawQueryExpected = SearchComponentConfigHelper::isUseRawQueryStatements();
 

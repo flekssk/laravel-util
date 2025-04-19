@@ -23,9 +23,9 @@ class ObjectsArrayProperty extends Property
             $items = new Items(properties: $objectProperties, type: 'object');
         } elseif (is_a($objectProperties, Schema::class, true)) {
             if (
-                is_object($objectProperties) &&
-                $objectProperties::class === Schema::class &&
-                $objectProperties->schema === Generator::UNDEFINED
+                is_object($objectProperties)
+                && $objectProperties::class === Schema::class
+                && $objectProperties->schema === Generator::UNDEFINED
             ) {
                 $items = new Items(properties: $objectProperties->properties, type: 'object');
             } else {
@@ -37,10 +37,10 @@ class ObjectsArrayProperty extends Property
 
         parent::__construct(
             property: $name,
+            required: $required,
             type: 'array',
             items: $items,
             deprecated: $deprecated,
-            required: $required,
         );
     }
 }

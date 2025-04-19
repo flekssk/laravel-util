@@ -12,9 +12,9 @@ use Ramsey\Uuid\Uuid;
 use Stringable;
 use FKS\Contracts\FKSLogger;
 
-class FKSLoggerService implements FKSLogger
+class LoggerService implements FKSLogger
 {
-    public function __construct(private LoggerInterface $logger) {}
+    public function __construct(private readonly LoggerInterface $logger) {}
 
     private array $FKS_profile_tokens = [];
 

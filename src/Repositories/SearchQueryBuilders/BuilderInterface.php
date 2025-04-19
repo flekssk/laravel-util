@@ -8,8 +8,5 @@ use Illuminate\Database\Query\Builder;
 
 interface BuilderInterface
 {
-    /**
-     * @param Builder $builder
-     */
-    public function applyCondition($builder, $condition, string $column = null): void;
+    public function applyCondition(Builder $builder, $condition, string $column = null): void;
 }

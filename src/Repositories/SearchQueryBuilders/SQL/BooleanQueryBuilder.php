@@ -7,10 +7,11 @@ namespace FKS\Repositories\SearchQueryBuilders\SQL;
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
+use Illuminate\Database\Query\Builder;
 
 class BooleanQueryBuilder implements BuilderInterface
 {
-    public function applyCondition($builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $isRawQueryExpected = SearchComponentConfigHelper::isUseRawQueryStatements();
         if ($condition->getValue()) {

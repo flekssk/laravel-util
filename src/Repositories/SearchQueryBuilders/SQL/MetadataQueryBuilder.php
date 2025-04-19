@@ -25,7 +25,7 @@ class MetadataQueryBuilder implements BuilderInterface
     /**
      * @param MetadataCondition $condition
      */
-    public function applyCondition($builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         if (!is_a($builder::class, Builder::class, true)) {
             throw new Exception(

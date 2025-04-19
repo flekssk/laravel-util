@@ -2,8 +2,8 @@
 
 namespace FKS\Providers;
 
+use FKS\Services\Swagger\Processors\AttributesProcessor;
 use Illuminate\Support\ServiceProvider;
-use FKS\Services\Swagger\Processors\FKSAttributesProcessor;
 
 class SwaggerProvider extends ServiceProvider
 {
@@ -12,7 +12,7 @@ class SwaggerProvider extends ServiceProvider
         config()->set(
             'l5-swagger.documentations.default.scanOptions.processors',
             [
-                FKSAttributesProcessor::class
+                AttributesProcessor::class
             ]
         );
     }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace FKS\Api;
 
-use App\Helpers\ConstantsHelper;
 use Illuminate\Support\Facades\Cache;
 
 abstract class ApiCachedClient extends ApiClient

@@ -203,10 +203,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use FKS\Http\Attributes\Parameters\Collections\Pagination;
-use FKS\Http\Attributes\Schemas\Operations\FKSDelete;
-use FKS\Http\Attributes\Schemas\Operations\FKSGet;
-use FKS\Http\Attributes\Schemas\Operations\FKSPatch;
-use FKS\Http\Attributes\Schemas\Operations\FKSPost;
+use FKS\Http\Attributes\Schemas\Operations\Delete;
+use FKS\Http\Attributes\Schemas\Operations\Get;
+use FKS\Http\Attributes\Schemas\Operations\Patch;
+use FKS\Http\Attributes\Schemas\Operations\Post;
 use App\Http\Attributes\Schemas\Models\V1\Entity\Entity;
 use FKS\Http\Attributes\Schemas\Requests\FormDataRequestBody;
 use App\Http\Attributes\Schemas\Requests\V1\Entity\EntityCreateRequest as EntityCreateRequestSchema;
@@ -224,7 +224,7 @@ use OpenApi\Attributes\Schema;
 
 class FilesController extends BaseController
 {
-    #[FKSPost(
+    #[Post(
         path: '/api/v1/entity',
         operationId: 'entity-create-v1',
         description: 'Create entity',
@@ -241,7 +241,7 @@ class FilesController extends BaseController
     {
     }
 
-    #[FKSPatch(
+    #[Patch(
         path: '/api/v1/entity/{fileId}',
         operationId: 'entity-update-v1',
         description: 'Update entity',
@@ -266,7 +266,7 @@ class FilesController extends BaseController
     {
     }
     
-        #[FKSDelete(
+        #[Delete(
         path: '/api/v1/entity/{fileId}',
         operationId: 'entity-delete-v1',
         description: 'Delete entity',

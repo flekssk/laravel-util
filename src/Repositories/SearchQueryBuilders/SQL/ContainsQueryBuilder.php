@@ -17,7 +17,7 @@ class ContainsQueryBuilder implements BuilderInterface
     /**
      * @param ContainsCondition $condition
      */
-    public function applyCondition($builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(\Illuminate\Database\Query\Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $ids = $this->prepareValues($condition);
         $filterHasNullValue = in_array(null, $condition->getValues(), true);

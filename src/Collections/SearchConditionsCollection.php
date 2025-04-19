@@ -17,7 +17,7 @@ class SearchConditionsCollection extends Collection
         );
     }
 
-    public function hasAny(mixed $key)
+    public function hasAny(mixed $key): bool
     {
         if ($this->isEmpty()) {
             return false;
@@ -34,7 +34,7 @@ class SearchConditionsCollection extends Collection
         return false;
     }
 
-    public function has(mixed $key)
+    public function has(mixed $key): bool
     {
         $keys = is_array($key) ? $key : func_get_args();
 

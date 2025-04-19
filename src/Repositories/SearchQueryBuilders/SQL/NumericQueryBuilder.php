@@ -8,13 +8,14 @@ use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
 use FKS\ValueObjects\SearchConditions\Conditions\NumericCondition;
+use Illuminate\Database\Query\Builder;
 
 class NumericQueryBuilder implements BuilderInterface
 {
     /**
      * @param NumericCondition $condition
      */
-    public function applyCondition($builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $value = $condition->getValue();
 
