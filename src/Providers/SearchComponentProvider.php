@@ -20,7 +20,7 @@ class SearchComponentProvider extends ServiceProvider
     {
         $this->app->singleton(SearchQueryBuilderFactoryInterface::class, function () {
             return tap(new SearchQueryBuilderFactory(), function (SearchQueryBuilderFactory $factory) {
-                $factory->setSearchDriver(SearchDriversEnum::SPANNER);
+                $factory->setSearchDriver(SearchDriversEnum::MYSQL);
             });
         });
 

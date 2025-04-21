@@ -24,7 +24,7 @@ use FKS\ValueObjects\Repository\WhereCondition;
  */
 abstract class Repository implements RepositoryInterface
 {
-    public const int DEFAULT_CHUNK_LENGTH = 200;
+    public const DEFAULT_CHUNK_LENGTH = 200;
 
     /**
      * @var ModelClass|Model

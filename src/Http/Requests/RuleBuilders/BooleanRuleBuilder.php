@@ -7,12 +7,12 @@ use FKS\ValueObjects\SearchConditions\Conditions\BooleanCondition;
 
 class BooleanRuleBuilder extends RuleBuilder
 {
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
 
         return [
-            "filter.$filterParam" => 'boolean' . ($this->required ? "|required" : ''),
+            "$filterParamName.$filterParam" => 'boolean' . ($this->required ? "|required" : ''),
         ];
     }
 

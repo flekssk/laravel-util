@@ -67,4 +67,11 @@ final class SearchConditions
             $this->availableFields[$index] = $field;
         }
     }
+
+    public function clearAvailableFields(): SearchConditions
+    {
+        $this->availableFields = [];
+
+        return $this;
+    }
 }

@@ -9,11 +9,15 @@ class SwaggerProvider extends ServiceProvider
 {
     public function register(): void
     {
-        config()->set(
-            'l5-swagger.documentations.default.scanOptions.processors',
-            [
-                AttributesProcessor::class
-            ]
-        );
+        $documentations = 'l5-swagger.documentations';
+
+        foreach (array_keys(config($documentations)) as $documentation) {
+            config()->set(
+                "l5-swagger.documentations.$documentation.scanOptions.processors",
+                [
+                    AttributesProcessor::class
+                ]
+            );
+        }
     }
 }

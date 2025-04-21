@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\SQL;
+namespace FKS\Repositories\SearchQueryBuilders\MySQL;
 
 use Exception;
 use Illuminate\Database\Eloquent\Builder;

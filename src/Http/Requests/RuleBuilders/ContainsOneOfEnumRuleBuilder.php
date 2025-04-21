@@ -18,16 +18,16 @@ class ContainsOneOfEnumRuleBuilder extends ContainsRuleBuilder implements HasSwa
         parent::__construct($filterParam);
     }
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
-        $rules = parent::getRules();
+        $rules = parent::getRules($filterParamName);
 
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
         // Override rule for valid enum values
-        $rules["filter.$filterParam.contains.*"] = $this->buildContainsRule();
+        $rules["$filterParamName.$filterParam.contains.*"] = $this->buildContainsRule();
 
         if (!$this->onlyContains) {
-            $rules["filter.$filterParam.notcontains.*"] = $this->buildNotContainsRule();
+            $rules["$filterParamName.$filterParam.notcontains.*"] = $this->buildNotContainsRule();
         }
 
         return $rules;

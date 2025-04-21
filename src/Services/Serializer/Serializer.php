@@ -69,7 +69,7 @@ class Serializer implements SerializerInterface
             if (is_a($property->type, Id::class, true)) {
                 $value = $property instanceof ArrayClassProperty ? Id::batchCreate($value) : Id::createNullable($value);
             } elseif (is_a($property->type, BackedEnum::class, true)) {
-                $value = $property->type::tryFrom($value);
+                $value = is_a($value, $property->type) ? $value : $property->type::tryFrom($value);
             } elseif (class_exists($property->type)) {
                 if ($property instanceof ArrayClassProperty) {
                     if ($value === null && !$property->nullable) {

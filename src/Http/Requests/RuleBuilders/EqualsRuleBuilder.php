@@ -21,7 +21,7 @@ class EqualsRuleBuilder extends RuleBuilder
         parent::__construct($filterParam, $escapeDotInParam);
     }
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
 
@@ -31,7 +31,7 @@ class EqualsRuleBuilder extends RuleBuilder
         };
 
         return [
-            "filter.$filterParam" => $typeRule . ($this->nullable ? '|nullable' : '') . ($this->required ? "|required" : ''),
+            "$filterParamName.$filterParam" => $typeRule . ($this->nullable ? '|nullable' : '') . ($this->required ? "|required" : ''),
         ];
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\SQL;
+namespace FKS\Repositories\SearchQueryBuilders\MySQL;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,7 @@ use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
 
 class SearchQueryBuilder implements BuilderInterface
 {
-    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder|\Illuminate\Database\Eloquent\Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $cases = is_array($condition->case) ? $condition->case : [$condition->case];
         $value = $condition->value;

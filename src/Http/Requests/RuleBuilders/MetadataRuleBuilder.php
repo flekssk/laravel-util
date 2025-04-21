@@ -16,17 +16,17 @@ use FKS\ValueObjects\SearchConditions\Conditions\NumericCondition;
 
 class MetadataRuleBuilder extends RuleBuilder
 {
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = $this->getFilterParam();
         return [
-            "filter.$filterParam" => 'array',
-            "filter.$filterParam.*.metadata_key" => 'required|string',
-            "filter.$filterParam.*.filter_type" => [
+            "$filterParamName.$filterParam" => 'array',
+            "$filterParamName.$filterParam.*.metadata_key" => 'required|string',
+            "$filterParamName.$filterParam.*.filter_type" => [
                 'required',
                 Rule::in(MetadataFilterTypeEnum::values()),
             ],
-            "filter.$filterParam.*.data" => [
+            "$filterParamName.$filterParam.*.data" => [
                 'required',
                 function ($attribute, $value, $fail, Validator $validator) use ($filterParam) {
                     $ruleBuilder = $this->buildSubRuleBuilder(

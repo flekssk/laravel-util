@@ -3,6 +3,8 @@
 namespace FKS\Http\Requests;
 
 use FKS\Contracts\PaginatorInterface;
+use FKS\Enums\SearchComponent\SortParamSchemaEnum;
+use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -10,7 +12,6 @@ use FKS\Collections\SearchConditionsCollection;
 use FKS\Http\Requests\RuleBuilders\RuleBuilder;
 use FKS\Http\Requests\SortingRuleBuilders\Enums\SortAsEnum;
 use FKS\ValueObjects\SearchConditions\SearchConditions;
-use Illuminate\Support\Collection;
 
 abstract class SearchRequest extends FormRequest
 {
@@ -24,21 +25,20 @@ abstract class SearchRequest extends FormRequest
 
     public function rules(): array
     {
+        $availableFieldsParamName = SearchComponentConfigHelper::getConfig()->availableFieldsParamName;
         $paginatorInstance = app(PaginatorInterface::class);
         $rules = [
-            'available_fields' => [
-                static::getAvailableFields() !== [] ? 'required' : 'nullable',
-                'array'
+            $availableFieldsParamName => [
+                'array',
             ],
-            'available_fields.*' => [
-                static::getAvailableFields() !== [] ? 'required' : 'nullable',
+            "$availableFieldsParamName.*" => [
                 'string',
                 function ($attribute, $value, $fail) {
                     if (!in_array($value, static::getAvailableFields(), true)) {
                         $message = "The selected available_field '$value' is invalid. Valid available_fields are: "
                             . implode(
                                 ', ',
-                                static::getAvailableFields()
+                                static::getAvailableFields(),
                             );
                         return $fail($message);
                     }
@@ -57,36 +57,71 @@ abstract class SearchRequest extends FormRequest
 
     public function sortRules(): array
     {
-        return [
-            'sort' => ['array'],
-            'sort.*.field' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    [$valuePrefix] = explode('.', $value);
-                    if (
-                        !in_array($value, static::getSortingDefinitions(), true)
-                        && !in_array($valuePrefix, static::getSortingDefinitions(), true)
-                    ) {
-                        $message = "The selected sort '$value' is invalid. Sortable fields are: "
-                            . implode(
-                                ', ',
-                                static::getSortingDefinitions()
-                            );
-                        return $fail($message);
-                    }
-                },
-            ],
-            'sort.*.direction' => [
-                'required',
-                'string',
-                Rule::in(['asc', 'desc']),
-            ],
-            'sort.*.sort_as' => [
-                'string',
-                Rule::enum(SortAsEnum::class),
-            ],
+        $sortParamName = SearchComponentConfigHelper::getConfig()->sortParamName;
+        $rules = [
+            $sortParamName => ['array'],
         ];
+
+        switch (config('search.sort_param_schema', SortParamSchemaEnum::OBJECT)) {
+            case SortParamSchemaEnum::OBJECT:
+                $rules = array_merge(
+                    $rules,
+                    [
+                        "$sortParamName.*.field" => [
+                            'required',
+                            'string',
+                            function ($attribute, $value, $fail) {
+                                [$valuePrefix] = explode('.', $value);
+                                if (
+                                    !in_array($value, static::getSortingDefinitions(), true)
+                                    && !in_array($valuePrefix, static::getSortingDefinitions(), true)
+                                ) {
+                                    $message = "The selected sort '$value' is invalid. Sortable fields are: "
+                                        . implode(
+                                            ', ',
+                                            static::getSortingDefinitions(),
+                                        );
+                                    return $fail($message);
+                                }
+                            },
+                        ],
+                        "$sortParamName.*.direction" => [
+                            'required',
+                            'string',
+                            Rule::in(['asc', 'desc']),
+                        ],
+                        "$sortParamName.*.sort_as" => [
+                            'string',
+                            Rule::enum(SortAsEnum::class),
+                        ],
+                    ],
+                );
+                break;
+            case SortParamSchemaEnum::KEY_VALUE:
+                $rules = array_merge(
+                    $rules,
+                    [
+                        "$sortParamName.*" => function ($column, $direction, $fail) {
+                            [$valuePrefix, $column] = explode('.', $column);
+
+                            if (!in_array($column, static::getSortingDefinitions(), true)) {
+                                $message = "The selected sort '$column' is invalid. Sortable fields are: "
+                                    . implode(
+                                        ', ',
+                                        static::getSortingDefinitions(),
+                                    );
+                                return $fail($message);
+                            }
+                            if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+                                return $fail('The selected sort direction is invalid. Valid directions are: asc, desc');
+                            }
+                        },
+                    ],
+                );
+                break;
+        }
+
+        return $rules;
     }
 
     public function filteringRules(): array
@@ -94,7 +129,7 @@ abstract class SearchRequest extends FormRequest
         $rules = [];
         foreach (static::getFilteringDefinitions() as $ruleBuilder) {
             /** @var $ruleBuilder RuleBuilder */
-            $rules += $ruleBuilder->getRules();
+            $rules += $ruleBuilder->getRules(SearchComponentConfigHelper::getConfig()->filterParamName);
         }
         return $rules;
     }
@@ -108,7 +143,7 @@ abstract class SearchRequest extends FormRequest
     {
         return array_merge(
             parent::messages(),
-            $this->getFilteringRulesMessages()
+            $this->getFilteringRulesMessages(),
         );
     }
 
@@ -151,7 +186,7 @@ abstract class SearchRequest extends FormRequest
 
         $additionalParamNames = array_unique(array_map(
             static fn($item) => explode('.', $item)[0] ?? null,
-            array_keys($this->additionalRules())
+            array_keys($this->additionalRules()),
         ));
         $additionalParams = [];
         foreach ($additionalParamNames as $paramName) {
@@ -162,12 +197,27 @@ abstract class SearchRequest extends FormRequest
             $additionalParams[$paramName] = $value;
         }
 
+        $sorts = collect($this->get(SearchComponentConfigHelper::getConfig()->sortParamName, []));
+
+        if (SearchComponentConfigHelper::getConfig()->sortParamSchema === SortParamSchemaEnum::KEY_VALUE) {
+            $sorts = $sorts->mapWithKeys(
+                static function ($value, $key) {
+                    return [
+                        [
+                            'field' => $key,
+                            'direction' => strtolower($value),
+                        ]
+                    ];
+                }
+            );
+        }
+
         return new SearchConditions(
-            $this->get('available_fields', []),
+            $this->get('available_fields', $this->getAvailableFields()),
             $filter,
-            new Collection($additionalParams),
+            collect($additionalParams),
             (bool)$this->get('only_counter', false),
-            new Collection($this->get('sort')),
+            $sorts,
             $paginatorInstance->setupFromRequest($this),
         );
     }

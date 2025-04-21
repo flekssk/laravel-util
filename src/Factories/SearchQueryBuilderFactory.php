@@ -8,16 +8,16 @@ use Illuminate\Support\Facades\App;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
 use FKS\Enums\SearchComponent\SearchDriversEnum;
 use FKS\Repositories\SearchQueryBuilders\BuilderInterface;
-use FKS\Repositories\SearchQueryBuilders\Spanner\BooleanQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\ContainsQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\DateRangeQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\EqualsQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\MemberSearchQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\MetadataQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\NullQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\NumericQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\SearchQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\Spanner\StartsWithQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\BooleanQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\ContainsQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\DateRangeQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\EqualsQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\MemberSearchQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\MetadataQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\NullQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\NumericQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\SearchQueryBuilder;
+use FKS\Repositories\SearchQueryBuilders\MySQL\StartsWithQueryBuilder;
 use FKS\ValueObjects\SearchConditions\Conditions\BooleanCondition;
 use FKS\ValueObjects\SearchConditions\Conditions\ContainsCondition;
 use FKS\ValueObjects\SearchConditions\Conditions\DateRangeCondition;
@@ -34,10 +34,10 @@ class SearchQueryBuilderFactory implements SearchQueryBuilderFactoryInterface
     private array $config;
 
     public function __construct(
-        private SearchDriversEnum $driver = SearchDriversEnum::SPANNER
+        private SearchDriversEnum $driver = SearchDriversEnum::MYSQL
     ) {
         $this->config = [
-            SearchDriversEnum::SPANNER->name => [
+            SearchDriversEnum::MYSQL->name => [
                 BooleanCondition::class => BooleanQueryBuilder::class,
                 ContainsCondition::class => ContainsQueryBuilder::class,
                 DateRangeCondition::class => DateRangeQueryBuilder::class,
@@ -49,20 +49,10 @@ class SearchQueryBuilderFactory implements SearchQueryBuilderFactoryInterface
                 EmptyOrNullCondition::class => NullQueryBuilder::class,
                 EqualsCondition::class => EqualsQueryBuilder::class,
             ],
-            SearchDriversEnum::ELASTICSEARCH->name => [
-                BooleanCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\BooleanQueryBuilder::class,
-                ContainsCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\ContainsQueryBuilder::class,
-                DateRangeCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\DateRangeQueryBuilder::class,
-                MemberSearchCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\MemberSearchQueryBuilder::class,
-                NumericCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\NumericQueryBuilder::class,
-                SearchCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\SearchQueryBuilder::class,
-                StartsWithCondition::class => \FKS\Repositories\SearchQueryBuilders\ElasticSearch\StartsWithQueryBuilder::class,
-                EmptyOrNullCondition::class => NullQueryBuilder::class,
-            ],
         ];
     }
 
-    public function set(string $conditionClass, string $queryBuilderClass, SearchDriversEnum $driver = SearchDriversEnum::SPANNER): void
+    public function set(string $conditionClass, string $queryBuilderClass, SearchDriversEnum $driver = SearchDriversEnum::MYSQL): void
     {
         $this->config[$driver->name][$conditionClass] = $queryBuilderClass;
     }

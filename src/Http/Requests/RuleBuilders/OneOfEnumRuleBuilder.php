@@ -21,7 +21,7 @@ class OneOfEnumRuleBuilder extends RuleBuilder implements HasEnumFilterValuesInt
         parent::__construct($filterParam);
     }
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
         $rules = [
@@ -34,7 +34,7 @@ class OneOfEnumRuleBuilder extends RuleBuilder implements HasEnumFilterValuesInt
         }
 
         return [
-            "filter.$filterParam" => $rules,
+            "$filterParamName.$filterParam" => $rules,
         ];
     }
 

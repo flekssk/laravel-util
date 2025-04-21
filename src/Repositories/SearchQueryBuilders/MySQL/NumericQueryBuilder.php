@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Repositories\SearchQueryBuilders\SQL;
+namespace FKS\Repositories\SearchQueryBuilders\MySQL;
 
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
@@ -15,7 +15,7 @@ class NumericQueryBuilder implements BuilderInterface
     /**
      * @param NumericCondition $condition
      */
-    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder|\Illuminate\Database\Eloquent\Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $value = $condition->getValue();
 

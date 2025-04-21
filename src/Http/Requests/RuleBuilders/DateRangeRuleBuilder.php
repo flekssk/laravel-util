@@ -12,13 +12,13 @@ class DateRangeRuleBuilder extends RuleBuilder
     protected ?string $type = DateRangeCondition::TYPE_DATE;
     protected const FORMAT = 'Y-m-d';
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
         $format = static::FORMAT;
 
         $rules = [
-            "filter.$filterParam" => [
+            "$filterParamName.$filterParam" => [
                 'array',
                 function ($param, $value, $fail) {
                     if ($value === []) {
@@ -26,12 +26,12 @@ class DateRangeRuleBuilder extends RuleBuilder
                     }
                 }
             ],
-            "filter.$filterParam.from" => ($this->nullable ? "present_with:filter.$filterParam" : "date_format:$format|required_with:filter.$filterParam|before_or_equal:filter.$filterParam.to|after:1900-01-01|before:2100-01-01"),
-            "filter.$filterParam.to" => ($this->nullable ? "present_with:filter.$filterParam" : "date_format:$format|required_with:filter.$filterParam|after_or_equal:filter.$filterParam.from|after:1900-01-01|before:2100-01-01"),
+            "$filterParamName.$filterParam.from" => ($this->nullable ? "present_with:filter.$filterParam" : "date_format:$format|required_with:filter.$filterParam|before_or_equal:filter.$filterParam.to|after:1900-01-01|before:2100-01-01"),
+            "$filterParamName.$filterParam.to" => ($this->nullable ? "present_with:filter.$filterParam" : "date_format:$format|required_with:filter.$filterParam|after_or_equal:filter.$filterParam.from|after:1900-01-01|before:2100-01-01"),
         ];
 
         if ($this->required) {
-            $rules["filter.$filterParam"][] = 'required';
+            $rules["$filterParamName.$filterParam"][] = 'required';
         }
 
         return $rules;

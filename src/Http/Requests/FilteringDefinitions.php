@@ -9,7 +9,6 @@ use FKS\Http\Requests\RuleBuilders\ContainsOneOfEnumRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\ContainsRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\DateRangeRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\EqualsRuleBuilder;
-use FKS\Http\Requests\RuleBuilders\MemberSearchRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\MetadataRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\NumericRuleBuilder;
 use FKS\Http\Requests\RuleBuilders\OneOfEnumRuleBuilder;
@@ -99,13 +98,6 @@ class FilteringDefinitions implements \Iterator, Arrayable
         $ruleBuilder = new MetadataRuleBuilder($filterParam);
         $this->addDefinition($ruleBuilder);
         return $ruleBuilder;
-    }
-
-    public function memberSearch(): MemberSearchRuleBuilder
-    {
-        return tap(new MemberSearchRuleBuilder('member_search'), function ($ruleBuilder) {
-            $this->addDefinition($ruleBuilder);
-        });
     }
 
     /**

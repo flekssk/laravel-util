@@ -21,11 +21,11 @@ class StringSearchRuleBuilder extends RuleBuilder
         parent::__construct($filterParam);
     }
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
         return [
-            "filter.$filterParam" => "nullable|min:$this->minChars|max:$this->maxChars"
+            "$filterParamName.$filterParam" => "nullable|min:$this->minChars|max:$this->maxChars"
                 . ($this->required ? "|required" : ''),
         ];
     }

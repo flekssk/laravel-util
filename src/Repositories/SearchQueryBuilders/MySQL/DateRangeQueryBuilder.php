@@ -1,6 +1,6 @@
 <?php
 
-namespace FKS\Repositories\SearchQueryBuilders\SQL;
+namespace FKS\Repositories\SearchQueryBuilders\MySQL;
 
 use FKS\Helpers\SearchComponent\SearchComponentConfigHelper;
 use FKS\Repositories\ColumnParamMap;
@@ -13,7 +13,7 @@ class DateRangeQueryBuilder implements BuilderInterface
     /**
      * @param DateRangeCondition $condition
      */
-    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder|\Illuminate\Database\Eloquent\Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $isRawQueryExpected = SearchComponentConfigHelper::isUseRawQueryStatements();
 

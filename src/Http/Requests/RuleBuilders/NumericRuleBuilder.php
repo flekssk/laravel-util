@@ -10,7 +10,7 @@ class NumericRuleBuilder extends RuleBuilder
     protected ?string $type = 'numeric';
     protected bool $nullable = true;
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $validationType = match($this->type) {
             NumericCondition::TYPE_NUMERIC => 'numeric',
@@ -20,13 +20,13 @@ class NumericRuleBuilder extends RuleBuilder
             ? str_replace('.', '\.', $this->getFilterParam())
             : $this->getFilterParam();
         return [
-            "filter.$filterParam" => 'array' . ($this->required ? '|required' : ''),
-            "filter.$filterParam.eq" => $validationType . ($this->nullable ? '|nullable' : ''),
-            "filter.$filterParam.ne" => $validationType . ($this->nullable ? '|nullable' : ''),
-            "filter.$filterParam.le" => $validationType . ($this->nullable ? '|nullable' : ''),
-            "filter.$filterParam.lt" => $validationType . ($this->nullable ? '|nullable' : ''),
-            "filter.$filterParam.gt" => $validationType . ($this->nullable ? '|nullable' : ''),
-            "filter.$filterParam.ge" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam" => 'array' . ($this->required ? '|required' : ''),
+            "$filterParamName.$filterParam.eq" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam.ne" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam.le" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam.lt" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam.gt" => $validationType . ($this->nullable ? '|nullable' : ''),
+            "$filterParamName.$filterParam.ge" => $validationType . ($this->nullable ? '|nullable' : ''),
         ];
     }
 

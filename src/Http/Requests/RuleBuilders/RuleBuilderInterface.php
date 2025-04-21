@@ -6,7 +6,7 @@ use FKS\ValueObjects\SearchConditions\Conditions\Condition;
 
 interface RuleBuilderInterface
 {
-    public function getRules(): array;
+    public function getRules(string $filterParamName): array;
 
     /**
      * @param $data

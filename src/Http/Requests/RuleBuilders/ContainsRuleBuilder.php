@@ -9,22 +9,22 @@ class ContainsRuleBuilder extends RuleBuilder
     protected ?string $type = 'string';
     protected bool $onlyContains = false;
 
-    public function getRules(): array
+    public function getRules(string $filterParamName): array
     {
         $filterParam = $this->escapeDotInParam
             ? str_replace('.', '\.', $this->getFilterParam())
             : $this->getFilterParam();
         $rules = [
-            "filter.$filterParam" => 'array' . ($this->required ? "|required" : ''),
-            "filter.$filterParam.contains" => 'array' . ($this->required && !$this->onlyContains ? "|required_without:filter.$filterParam.notcontains" : ($this->required ? "|required" : '')),
-            "filter.$filterParam.contains.*" => $this->getTypeValidationRule() . ($this->nullable ? '|nullable' : '') . ($this->required && $this->onlyContains ? "|required" : ''),
+            "$filterParamName.$filterParam" => 'array' . ($this->required ? "|required" : ''),
+            "$filterParamName.$filterParam.contains" => 'array' . ($this->required && !$this->onlyContains ? "|required_without:filter.$filterParam.notcontains" : ($this->required ? "|required" : '')),
+            "$filterParamName.$filterParam.contains.*" => $this->getTypeValidationRule() . ($this->nullable ? '|nullable' : '') . ($this->required && $this->onlyContains ? "|required" : ''),
         ];
 
         if (!$this->onlyContains) {
-            $rules["filter.$filterParam.notcontains"] = 'array' . ($this->required ? "|required_without:filter.$filterParam.contains" : '');
-            $rules["filter.$filterParam.notcontains.*"] = $this->getTypeValidationRule() . ($this->nullable ? '|nullable' : '');
+            $rules["$filterParamName.$filterParam.notcontains"] = 'array' . ($this->required ? "|required_without:filter.$filterParam.contains" : '');
+            $rules["$filterParamName.$filterParam.notcontains.*"] = $this->getTypeValidationRule() . ($this->nullable ? '|nullable' : '');
         } else {
-            $rules["filter.$filterParam.notcontains"] = 'prohibited';
+            $rules["$filterParamName.$filterParam.notcontains"] = 'prohibited';
         }
 
         return $rules;

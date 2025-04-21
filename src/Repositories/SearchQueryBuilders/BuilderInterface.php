@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Repositories\SearchQueryBuilders;
 
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 
 interface BuilderInterface
 {
