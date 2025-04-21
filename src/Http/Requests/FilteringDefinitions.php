@@ -114,9 +114,9 @@ class FilteringDefinitions implements \Iterator, Arrayable
         });
     }
 
-    public function oneOfEnum(string $filterParam, string $enumClassString): OneOfEnumRuleBuilder
+    public function oneOfEnum(string $filterParam, string $enumClassString, ?\BackedEnum $shouldBeSkipped = null): OneOfEnumRuleBuilder
     {
-        return tap(new OneOfEnumRuleBuilder($enumClassString, $filterParam), function ($ruleBuilder) {
+        return tap(new OneOfEnumRuleBuilder($enumClassString, $filterParam, $shouldBeSkipped), function ($ruleBuilder) {
             $this->addDefinition($ruleBuilder);
         });
     }

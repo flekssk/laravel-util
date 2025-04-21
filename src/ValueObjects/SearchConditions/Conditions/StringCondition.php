@@ -38,4 +38,9 @@ class StringCondition extends Condition
     {
         return $this->operator;
     }
+
+    public function getData(): string
+    {
+        return $this->value;
+    }
 }

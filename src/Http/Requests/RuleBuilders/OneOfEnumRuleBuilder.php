@@ -12,7 +12,7 @@ use FKS\ValueObjects\SearchConditions\Conditions\StringCondition;
 class OneOfEnumRuleBuilder extends RuleBuilder implements HasEnumFilterValuesInterface
 {
     /** @param class-string<BackedEnum> $enumClassString */
-    public function __construct(protected string $enumClassString, string $filterParam = null)
+    public function __construct(protected string $enumClassString, string $filterParam = null, protected ?BackedEnum $shouldBeSkipped = null)
     {
         if (!is_a($enumClassString, BackedEnum::class, true)) {
             throw new DomainException('Enum param must be valid enum class string');
@@ -40,6 +40,10 @@ class OneOfEnumRuleBuilder extends RuleBuilder implements HasEnumFilterValuesInt
 
     public function getConditions($data): array
     {
+        if ($data === $this->shouldBeSkipped?->value) {
+            return [];
+        }
+
         return [
             new StringCondition($this->getFilterParam(), $data, '=', 'string'),
         ];

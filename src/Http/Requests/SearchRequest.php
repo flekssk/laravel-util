@@ -163,7 +163,7 @@ abstract class SearchRequest extends FormRequest
     {
         $filter = new SearchConditionsCollection();
         $paginatorInstance = app(PaginatorInterface::class);
-        $requestFilters = Arr::get($this->all(), 'filter', []);
+        $requestFilters = Arr::get($this->all(), SearchComponentConfigHelper::getConfig()->filterParamName, []);
 
         /** @var RuleBuilder $builder */
         foreach (static::getFilteringDefinitions() as $builder) {

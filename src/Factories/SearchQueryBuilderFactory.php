@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Factories;
 
+use FKS\ValueObjects\SearchConditions\Conditions\StringCondition;
 use Illuminate\Support\Facades\App;
 use FKS\Contracts\SearchQueryBuilderFactoryInterface;
 use FKS\Enums\SearchComponent\SearchDriversEnum;
@@ -12,7 +13,6 @@ use FKS\Repositories\SearchQueryBuilders\MySQL\BooleanQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\ContainsQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\DateRangeQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\EqualsQueryBuilder;
-use FKS\Repositories\SearchQueryBuilders\MySQL\MemberSearchQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\MetadataQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\NullQueryBuilder;
 use FKS\Repositories\SearchQueryBuilders\MySQL\NumericQueryBuilder;
@@ -41,13 +41,13 @@ class SearchQueryBuilderFactory implements SearchQueryBuilderFactoryInterface
                 BooleanCondition::class => BooleanQueryBuilder::class,
                 ContainsCondition::class => ContainsQueryBuilder::class,
                 DateRangeCondition::class => DateRangeQueryBuilder::class,
-                MemberSearchCondition::class => MemberSearchQueryBuilder::class,
                 NumericCondition::class => NumericQueryBuilder::class,
                 SearchCondition::class => SearchQueryBuilder::class,
                 StartsWithCondition::class => StartsWithQueryBuilder::class,
                 MetadataCondition::class => MetadataQueryBuilder::class,
                 EmptyOrNullCondition::class => NullQueryBuilder::class,
                 EqualsCondition::class => EqualsQueryBuilder::class,
+                StringCondition::class => EqualsQueryBuilder::class,
             ],
         ];
     }
