@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
+use FKS\ActivityLog\ActivityLogService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use FKS\Facades\FKS;
-use FKS\Services\ActivityLog\ActivityLogService;
 
 return new class extends Migration {
     public function up(): void
@@ -49,17 +48,14 @@ return new class extends Migration {
             ->create(
                 'activity_logs',
                 static function (Blueprint $table) {
-                    $table->binaryUuid('entity_id');
-                    $table->binaryUuid('activity_log_id');
+                    $table->bigInteger('entity_id');
+                    $table->bigInteger('activity_log_id');
 
-                    $table->binaryUuid('data_owner_id');
                     $table->integer('entity_type_id');
                     $table->integer('activity_type_id');
                     $table->json('payload');
 
                     $table->timestamp('created_at');
-                    $table->binaryUuid('created_at_day_id');
-                    $table->binaryUuid('created_by')->nullable();
 
                     $table->primary(['entity_id', 'activity_log_id']);
 
@@ -91,11 +87,10 @@ return new class extends Migration {
 
             foreach ($indexes as $index) {
                 try {
-                    Schema::table($tableName, static function (\Colopl\Spanner\Schema\Blueprint $table) use ($index) {
+                    Schema::table($tableName, static function (Blueprint $table) use ($index) {
                         $table->dropIndex($index);
                     });
                 } catch (Exception $exception) {
-                    FKS::logException($exception);
                     echo $exception->getMessage() . PHP_EOL;
                 }
             }

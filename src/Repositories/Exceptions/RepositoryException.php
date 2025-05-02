@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace FKS\Repositories\Exceptions;
 
-final class RepositoryException extends \Exception
+use Exception;
+
+final class RepositoryException extends Exception
 {
     public static function invalidRepositoryEntityClass(string $repositoryClass, string $className): self
     {

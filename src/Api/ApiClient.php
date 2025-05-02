@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace FKS\Api;
 
-use FKS\Api\DTO\ApiResponse;
-use FKS\Api\DTO\MergableApiResponseInterface;
-use FKS\Services\Serializer\Serializer;
-use FKS\Services\Serializer\SerializerInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
+use FKS\Api\DTO\ApiResponse;
+use FKS\Api\DTO\MergableApiResponseInterface;
+use FKS\Serializer\Serializer;
+use FKS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiClient
@@ -54,29 +54,6 @@ class ApiClient
 
             $responseClass = $responseClass ?? ApiResponse::class;
             $responseObject = new $responseClass($elements);
-        } catch (JsonException $exception) {
-            throw new RuntimeException('Invalid JSON response from server: ' . $exception->getMessage());
-        }
-        return $responseObject;
-    }
-
-    /**
-     * @template T
-     * @psalm-param class-string<T> $class
-     * @return T
-     * @throws JsonException
-     * @deprecated
-     */
-    protected function handleSingleEntityResponse(
-        $response,
-        array $propertiesMapping = [],
-    ): mixed {
-        try {
-            $responseObject = FKSSerializerFacade::deserializeFromJson(
-                (string) $response->getBody()->getContents(),
-                $propertiesMapping,
-                'data'
-            );
         } catch (JsonException $exception) {
             throw new RuntimeException('Invalid JSON response from server: ' . $exception->getMessage());
         }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace FKS\Repositories;
 
-use FKS\Repositories\Exceptions\RepositoryException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,9 +12,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use ReflectionException;
-use FKS\Collections\EntitiesCollection;
-use FKS\Contracts\RepositoryInterface;
-use FKS\ValueObjects\Repository\WhereCondition;
+use FKS\Search\Collections\EntitiesCollection;
+use FKS\Search\Contracts\RepositoryInterface;
+use FKS\Search\Repositories\Exceptions\RepositoryException;
+use FKS\Search\ValueObjects\WhereCondition;
 
 /**
  * Class Repository

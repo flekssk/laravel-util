@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Api\DTO;
 
-use FKS\Services\Serializer\SerializableObject;
+use FKS\Serializer\SerializableObject;
 
 class ApiResponse extends SerializableObject
 {
