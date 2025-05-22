@@ -14,6 +14,10 @@ use FKS\ClassPropertiesParser\ScalarClassProperty;
 
 class Serializer implements SerializerInterface
 {
+    private array $systemProperties = [
+        'escapeWhenCastingToString',
+    ];
+
     public function deserializeFromJson(
         string $data,
         string $class,
@@ -44,7 +48,17 @@ class Serializer implements SerializerInterface
                 $result[] = new $class(...$this->convertToObjectProperties($class, $datum));
             }
         } else {
-            $result = new $class(...$this->convertToObjectProperties($class, $data));
+            $constructorParameters = PropertiesParser::getConstructorPropertiesNames($class);
+            $classProperties = array_filter(
+                $this->convertToObjectProperties($class, $data),
+                function ($property, $key) use ($constructorParameters) {
+                    return in_array($key, $constructorParameters, true);
+                },
+                ARRAY_FILTER_USE_BOTH
+            );
+
+
+            $result = new $class(...$classProperties);
         }
 
         return $result;
@@ -59,8 +73,10 @@ class Serializer implements SerializerInterface
             $serializedPropertyName = Str::snake($property->name);
 
             $value = $data[$serializedPropertyName] ?? null;
-            if (!array_key_exists(Str::snake($serializedPropertyName), $data) &&
-                $property->nullable && $this->isCastable($value)
+            if (
+                !array_key_exists(Str::snake($serializedPropertyName), $data)
+                && $property->nullable
+                && $this->isCastable($value)
             ) {
                 continue;
             }
@@ -101,7 +117,8 @@ class Serializer implements SerializerInterface
         $array = [];
 
         foreach ($properties as $name => $property) {
-            if (!in_array($name, $hiddenProperties)) {
+
+            if (!in_array($name, $hiddenProperties) && !in_array($name, $this->systemProperties)) {
                 $array[Str::snake($name)] = $this->serializeProperty($property, Arr::get($hiddenProperties, $name, []));
             }
         }

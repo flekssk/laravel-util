@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Metadata\Models;
 
+use FKS\Metadata\Collection\MetadataCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use FKS\Metadata\Casts\MetadataValueCast;
@@ -91,5 +92,10 @@ abstract class Metadata extends Model
     public function getConfig(): MetadataConfig
     {
         return self::$config;
+    }
+
+    public function newCollection(array $models = []): MetadataCollection
+    {
+        return new MetadataCollection($models);
     }
 }
