@@ -23,16 +23,6 @@ class ApiServiceProvider extends ServiceProvider
                 throw new \Exception('Class not found');
             }
 
-            if (!is_a(ApiClient::class, $config->apiClient, true)) {
-                throw new \Exception("Class $config->apiClient not based on \FKS\Api\ApiClient");
-            }
-
-            foreach ($config->requestMiddlewares as $enricher) {
-                if (!is_a($enricher, RequestMiddlewareInterface::class, true)) {
-                    throw new \Exception("Class $enricher not implements \FKS\Api\Enrichers\EnricherInterface");
-                }
-            }
-
             $this->app->singleton($config->apiClient, function () use ($config) {
                 return new $config->apiClient(
                     new Client([

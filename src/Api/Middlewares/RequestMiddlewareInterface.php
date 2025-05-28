@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FKS\Api\Enrichers;
+namespace FKS\Api\Middlewares;
 
 interface RequestMiddlewareInterface
 {
