@@ -1,12 +1,13 @@
 {
-    "name": "flekssk/laravel-util",
+    "name": "fks/laravel-util",
     "description": "utility classes",
     "type": "library",
     "require": {
-        "php": "^8.1",
+        "php": "^8.4",
         "laravel/framework": "^10.0|^11.0|^12.0",
         "ext-json": "*",
-        "darkaonline/l5-swagger": "^8.0|^9.0"
+        "darkaonline/l5-swagger": "^8.0|^9.0",
+        "lorisleiva/laravel-actions": "^2.9"
     },
     "require-dev": {
         "mockery/mockery": "^1.4.4",
@@ -24,11 +25,6 @@
     "autoload": {
         "psr-4": {
             "FKS\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
         }
     },
     "config": {

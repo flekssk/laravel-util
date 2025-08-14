@@ -1,5 +1,10 @@
 <?php
+
+declare(strict_types=1);
+
+use FKS\Search\ValueObjects\PerPagePaginator;
+
 return [
-    'paginator' => \FKS\ValueObjects\SearchConditions\PerPagePaginator::class,
+    'paginator' => PerPagePaginator::class,
     'use_raw_query_statements' => false,
 ];
