@@ -8,7 +8,7 @@ use FKS\Serializer\SerializableObject;
 
 class CountsResultDTO extends SerializableObject
 {
-    public function __construct(public int $totalCounts, public array $list)
+    public function __construct(public int $found, public int $all, public array $counts)
     {
     }
 }

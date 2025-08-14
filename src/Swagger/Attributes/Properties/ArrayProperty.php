@@ -12,7 +12,7 @@ class ArrayProperty extends Property
     public function __construct(
         string $propertyName,
         string $arrayItemType = 'string',
-        string $example = null,
+        string|int $example = null,
         ?bool $deprecated = null,
         ?array $required = null,
     )

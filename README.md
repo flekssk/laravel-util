@@ -1,6 +1,6 @@
 
-<p align="center">
-    <strong>A FKS PHP utilities</strong>
+<p>
+    <strong>Laravel utilities</strong>
 </p>
 
 Installation
@@ -36,17 +36,9 @@ Important: `v1.0.0` change to fresh release.
 Documentation
 ------------
 
-[FKS Facade](docs/FKS-facade.md)
-
 [Search Component](docs/search-component.md)
 
-[Logging](docs/logging.md)
-
-[PubSub Listener](docs/pubsub-listener.md)
-
 [Swagger attributes](docs/swagger-attributes.md)
-
-[Middlewares](docs/middlewares.md)
 
 [Metadata](docs/FKS-metadata.md)
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FKS\Swagger\Attributes\Schemas\Requests;
 
 use DomainException;
+use FKS\Search\Enums\SortParamSchemaEnum;
 use FKS\Search\Helpers\SearchComponentConfigHelper;
 use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
@@ -18,8 +19,11 @@ use FKS\Search\Requests\RuleBuilders\MetadataRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\NumericRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\OneOfEnumRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\RuleBuilder;
+use FKS\Search\Requests\RuleBuilders\StringCombinedSearchRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\StringSearchRuleBuilder;
+use FKS\Search\Requests\SettingsDefinitions;
 use FKS\Search\Requests\SortingRuleBuilders\Enums\SortAsEnum;
+use FKS\Search\ValueObjects\Settings\FilterPresetSetting;
 use FKS\Swagger\Attributes\Helpers\RequestFiltersHelper;
 use FKS\Swagger\Attributes\Properties\ObjectsArrayProperty;
 use FKS\Swagger\Attributes\Properties\StringProperty;
@@ -72,43 +76,80 @@ trait RequestHasFilters
 
     public function buildSortingField(array $getSortingDefinitions): ?Property
     {
+        if (SearchComponentConfigHelper::getConfig()->sortParamSchema === SortParamSchemaEnum::KEY_VALUE) {
+            $properties = [
+                new Property(
+                    property: 'field_name',
+                    type: 'string',
+                    enum: ['asc', 'desc'],
+                )
+            ];
+        } else {
+            $properties = [
+                new Property(
+                    property: 'field',
+                    type: 'string',
+                    enum: $getSortingDefinitions,
+                ),
+                new Property(
+                    property: 'direction',
+                    type: 'string',
+                    enum: ['asc', 'desc'],
+                ),
+                new Property(
+                    property: 'sort_as',
+                    type: 'string',
+                    enum: SortAsEnum::values(),
+                    example: SortAsEnum::INTEGER->value,
+                ),
+            ];
+        }
+
         return $getSortingDefinitions !== [] ? new Property(
-            property: 'sort',
+            property: SearchComponentConfigHelper::getConfig()->sortParamName,
             type: 'array',
             items: new Items(
-                properties: [
-                    new Property(
-                        property: 'field',
-                        type: 'string',
-                        enum: $getSortingDefinitions,
-                    ),
-                    new Property(
-                        property: 'direction',
-                        type: 'string',
-                        enum: ['asc', 'desc'],
-                    ),
-                    new Property(
-                        property: 'sort_as',
-                        type: 'string',
-                        enum: SortAsEnum::values(),
-                        example: SortAsEnum::INTEGER->value,
-                    ),
-                ],
+                properties: $properties,
                 type: 'object'
             ),
             example: $this->buildSortingExample($getSortingDefinitions)
         ) : null;
     }
 
+    public function buildSettingsFields(SettingsDefinitions $settingsDefinitions): array
+    {
+        $settings = [];
+
+        foreach ($settingsDefinitions as $settingsDefinition) {
+            if ($settingsDefinition instanceof FilterPresetSetting) {
+                $settings[] = new Property(
+                    property: 'filter_preset',
+                    type: 'array',
+                    items: new Items(
+                        type: 'string',
+                        example: array_map(static fn(\BackedEnum|string $value) => $value instanceof \BackedEnum ? $value->value : $value, $settingsDefinition->getAvailablePresets())
+                    ),
+                );
+            }
+        }
+
+        return $settings;
+    }
+
     protected function buildSortingExample(array $getSortingDefinitions): array
     {
         $exampleArray = [];
         foreach ($getSortingDefinitions as $sortingDefinition) {
-            $exampleArray[] = [
-                'field' => $sortingDefinition,
-                "direction" => "asc",
-                "sort_as" => 'integer',
-            ];
+            if (SearchComponentConfigHelper::getConfig()->sortParamSchema === SortParamSchemaEnum::KEY_VALUE) {
+                $exampleArray[$sortingDefinition] = 'desc';
+            } else {
+                $exampleArray[] = [
+                    'field' => $sortingDefinition,
+                    "direction" => "asc",
+                    "sort_as" => 'integer',
+
+                ];
+            }
         }
         return $exampleArray;
     }
@@ -145,54 +186,55 @@ trait RequestHasFilters
             $hasNotContains = false;
             $example = $this->buildFilterExample($filtersDefinition, $filterType);
 
-            foreach ($filtersDefinition->getRules(SearchComponentConfigHelper::getConfig()->filterParamName) as $rule => $type) {
-                if (str_contains($rule, '.contains.')) {
-                    $hasContains = true;
-                }
-                if (
-                    $example === null
-                    && (str_contains($rule, 'contains.*') || str_contains($rule, 'notcontains.*'))
-                ) {
-                    if (str_contains($type, 'uuid_or_hex')) {
-                        $example = RequestFiltersHelper::$primitivesToExampleMap['uuid_or_hex'];
+            if (!$filtersDefinition->isArray()) {
+                foreach ($filtersDefinition->getRules(SearchComponentConfigHelper::getConfig()->filterParamName) as $rule => $type) {
+                    if (str_contains($rule, '.contains.')) {
+                        $hasContains = true;
+                    }
+
+                    if (str_contains($rule, '.notcontains.')) {
+                        $hasNotContains = true;
                     }
                 }
 
-                if (str_contains($rule, '.notcontains.')) {
-                    $hasNotContains = true;
-                }
-            }
-
-            if ($hasContains) {
                 $itemPropertiesArray = [
                     'type' => $filterType,
                     'example' => $example ?? $filterType,
                 ];
+                if ($hasContains) {
 
-                if ($filtersDefinition instanceof HasEnumFilterValuesInterface) {
-                    $itemPropertiesArray += ['enum' => $filtersDefinition->getEnumValues()];
+                    if ($filtersDefinition instanceof HasEnumFilterValuesInterface) {
+                        $itemPropertiesArray += ['enum' => $filtersDefinition->getEnumValues()];
+                    }
+                    $properties['contains'] = new Property(
+                        property: 'contains',
+                        type: 'array',
+                        items: new Items(
+                            ...$itemPropertiesArray
+                        )
+                    );
                 }
-                $properties['contains'] = new Property(
-                    property: 'contains',
-                    type: 'array',
-                    items: new Items(
-                        ...$itemPropertiesArray
-                    )
-                );
-            }
 
-            if ($hasNotContains) {
-                $properties['notcontains'] = new Property(
-                    property: 'notcontains',
-                    type: 'array',
-                    items: new Items(
-                        type: $filterType,
-                        example: $example ?? $filterType
-                    ),
+                if ($hasNotContains) {
+                    $properties['notcontains'] = new Property(
+                        property: 'notcontains',
+                        type: 'array',
+                        items: new Items(
+                            type: $filterType,
+                            example: $example ?? $filterType
+                        ),
+                    );
+                }
+
+                $propertyAttributes['properties'] = $properties;
+                $propertyAttributes['type'] = 'object';
+            } else {
+                $propertyAttributes['type'] = 'array';
+                $propertyAttributes['items'] = new Items(
+                    type: $filterType,
+                    example:  $example ?? $filterType,
                 );
             }
-            $propertyAttributes['properties'] = $properties;
-            $propertyAttributes['type'] = 'object';
         } elseif (is_a($filtersDefinition, DateRangeRuleBuilder::class)) {
             $properties = [
                 new Property(
@@ -249,7 +291,10 @@ trait RequestHasFilters
             $propertyAttributes['type'] = $filterType;
             $propertyAttributes['enum'] = $filtersDefinition->getEnumValues();
             $propertyAttributes['example'] = $firstCase->value;
-        } elseif (is_a($filtersDefinition, StringSearchRuleBuilder::class)) {
+        } elseif (
+            is_a($filtersDefinition, StringSearchRuleBuilder::class)
+            || is_a($filtersDefinition, StringCombinedSearchRuleBuilder::class)
+        ) {
             $propertyAttributes['type'] = $filterType;
             $propertyAttributes['example'] = $paramName;
         } elseif (is_a($filtersDefinition, MetadataRuleBuilder::class)) {

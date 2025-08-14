@@ -97,7 +97,7 @@ trait OperationsTrait
         try {
             $schema = new $responseClass(...$data);
         } catch (Throwable $e) {
-            throw new L5SwaggerException("Can't create schema $responseClass: " . $e->getMessage());
+            throw new L5SwaggerException("Can't create schema $responseClass: " . $e->getMessage(), $e->getCode(), $e);
         }
 
         return $schema;

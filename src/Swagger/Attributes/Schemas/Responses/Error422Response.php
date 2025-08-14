@@ -20,8 +20,7 @@ class Error422Response extends Response
             description: 'Validation error',
             content: new JsonContent(
                 properties: [
-                    new IntegerProperty('code', 422),
-                    new StringProperty('status', 'error'),
+                    new StringProperty('message', 'error'),
                     new ObjectsArrayProperty(
                         'errors',
                         [

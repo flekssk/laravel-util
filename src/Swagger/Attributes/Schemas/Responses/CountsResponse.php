@@ -18,7 +18,7 @@ class CountsResponse extends Response
     /**
      * @param class-string<SearchRequest> $countRequestClass
      */
-    public function __construct(string $countRequestClass, string $apiVersion)
+    public function __construct(string $countRequestClass)
     {
         if (!is_a($countRequestClass, SearchRequest::class, true)) {
             throw new DomainException('countRequestClass param must be CountsRequest class string or object');
@@ -34,7 +34,7 @@ class CountsResponse extends Response
         }
 
         $properties = [
-            new IntegerProperty('total_count'),
+            new IntegerProperty('total'),
             new ObjectsArrayProperty(
                 'list',
                 $groupProperties ?? []
@@ -52,10 +52,7 @@ class CountsResponse extends Response
             description: 'List response',
             content: new JsonContent(
                 properties: [
-                    new IntegerProperty('code', 200),
-                    new StringProperty('status', 'ok'),
                     $dataProperty,
-                    new StringProperty('meta', 'api version ' . $apiVersion)
                 ]
             )
         );

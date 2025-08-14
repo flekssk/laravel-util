@@ -4,6 +4,7 @@ namespace FKS\Search\ValueObjects;
 
 use FKS\Search\Contracts\PaginatorInterface;
 use FKS\Search\Requests\SearchRequest;
+use FKS\Swagger\Attributes\Properties\IntegerProperty;
 
 class PerPagePaginator implements PaginatorInterface
 {
@@ -41,5 +42,13 @@ class PerPagePaginator implements PaginatorInterface
     public function setPerPage(int $perPage): void
     {
         $this->perPage = $perPage;
+    }
+
+    public function getSwaggerProperties(): array
+    {
+        return [
+            new IntegerProperty('page', description: 'Page of the results'),
+            new IntegerProperty('per_page', description:  'Per page of the results'),
+        ];
     }
 }

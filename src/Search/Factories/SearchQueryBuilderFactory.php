@@ -15,6 +15,7 @@ use FKS\Search\Repositories\SearchQueryBuilders\MySQL\EqualsQueryBuilder;
 use FKS\Search\Repositories\SearchQueryBuilders\MySQL\MetadataQueryBuilder;
 use FKS\Search\Repositories\SearchQueryBuilders\MySQL\NullQueryBuilder;
 use FKS\Search\Repositories\SearchQueryBuilders\MySQL\NumericQueryBuilder;
+use FKS\Search\Repositories\SearchQueryBuilders\MySQL\OneOfQueryBuilder;
 use FKS\Search\Repositories\SearchQueryBuilders\MySQL\SearchQueryBuilder;
 use FKS\Search\Repositories\SearchQueryBuilders\MySQL\StartsWithQueryBuilder;
 use FKS\Search\ValueObjects\Conditions\BooleanCondition;
@@ -24,6 +25,7 @@ use FKS\Search\ValueObjects\Conditions\EmptyOrNullCondition;
 use FKS\Search\ValueObjects\Conditions\EqualsCondition;
 use FKS\Search\ValueObjects\Conditions\MetadataCondition;
 use FKS\Search\ValueObjects\Conditions\NumericCondition;
+use FKS\Search\ValueObjects\Conditions\OneOfCondition;
 use FKS\Search\ValueObjects\Conditions\SearchCondition;
 use FKS\Search\ValueObjects\Conditions\StartsWithCondition;
 use FKS\Search\ValueObjects\Conditions\StringCondition;
@@ -47,6 +49,7 @@ class SearchQueryBuilderFactory implements SearchQueryBuilderFactoryInterface
                 EmptyOrNullCondition::class => NullQueryBuilder::class,
                 EqualsCondition::class => EqualsQueryBuilder::class,
                 StringCondition::class => EqualsQueryBuilder::class,
+                OneOfCondition::class => OneOfQueryBuilder::class,
             ],
         ];
     }

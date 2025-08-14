@@ -19,10 +19,7 @@ final class ObjectReflector
 
             if (count($name) === 1) {
                 $name = $name[0];
-            } elseif (
-                $name[1] !== $className
-                && $name[1] !== '*'
-            ) {
+            } elseif ($name[1] !== $className) {
                 $name = $name[1] . '::' . $name[2];
             } else {
                 $name = $name[2];

@@ -12,9 +12,9 @@ use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
+use FKS\Swagger\Attributes\Properties\ArrayProperty;
 use FKS\Swagger\Attributes\Properties\IntegerProperty;
 use FKS\Swagger\Attributes\Properties\StringProperty;
-use FKS\Swagger\Attributes\Properties\UuidProperty;
 use ReflectionClass;
 
 class SchemaExtractorHelper
@@ -65,6 +65,10 @@ class SchemaExtractorHelper
     {
         $rule = is_string($rule) ? explode('|', $rule) : $rule;
 
+        if (in_array('array', $rule, true)) {
+            return null;
+        }
+
         $enum = null;
         $example = null;
         foreach ($rule as $item) {
@@ -80,14 +84,50 @@ class SchemaExtractorHelper
             $example = Arr::first($enum ?? []);
         }
 
-        return match(true) {
-            in_array('string', $rule) => new StringProperty($propertyName, example: $example, enum: $enum),
-            in_array('integer', $rule), in_array('int', $rule) => new IntegerProperty($propertyName,
-                example: $example,
+        $type = self::resolveTypeFromRules($rule);
+
+        if ($example === null) {
+            $example = self::getTypeExample($type);
+        }
+
+        if (str_contains($propertyName, '.*')) {
+            $type = 'array';
+            $propertyName = str_replace('.*', '', $propertyName);
+
+        }
+
+        return match($type) {
+            'array' => new ArrayProperty($propertyName, self::resolveTypeFromRules($rule), $example),
+            'string' => new StringProperty($propertyName, example: $example, enum: $enum),
+            'integer' => new IntegerProperty(
+                $propertyName,
+                example: $example ?? 1,
                 enum: $enum
             ),
-            in_array('uuid_or_hex', $rule) => new UuidProperty($propertyName),
-            in_array('icd_code', $rule) => new StringProperty($propertyName, 'E1151'),
+            default => null,
+        };
+    }
+
+    private static function resolveTypeFromRules(array $rules): ?string
+    {
+        if (in_array('string', $rules)) {
+            return 'string';
+        }
+        if (in_array('integer', $rules) || in_array('int', $rules)) {
+            return 'integer';
+        }
+        if (in_array('bool', $rules) || in_array('boolean', $rules)) {
+            return 'boolean';
+        }
+
+        return null;
+    }
+
+    private static function getTypeExample(string $type): mixed
+    {
+        return match($type) {
+            'string' => 'string',
+            'integer' => 1,
             default => null,
         };
     }

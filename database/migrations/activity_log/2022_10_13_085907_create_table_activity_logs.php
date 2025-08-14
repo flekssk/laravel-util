@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use FKS\ActivityLog\ActivityLogService;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -51,11 +51,14 @@ return new class extends Migration {
                     $table->bigInteger('entity_id');
                     $table->bigInteger('activity_log_id');
 
+                    $table->bigInteger('data_owner_id');
                     $table->integer('entity_type_id');
                     $table->integer('activity_type_id');
                     $table->json('payload');
 
                     $table->timestamp('created_at');
+                    $table->bigInteger('created_at_day_id');
+                    $table->bigInteger('created_by')->nullable();
 
                     $table->primary(['entity_id', 'activity_log_id']);
 
@@ -86,13 +89,9 @@ return new class extends Migration {
                 ->pluck('INDEX_NAME');
 
             foreach ($indexes as $index) {
-                try {
-                    Schema::table($tableName, static function (Blueprint $table) use ($index) {
-                        $table->dropIndex($index);
-                    });
-                } catch (Exception $exception) {
-                    echo $exception->getMessage() . PHP_EOL;
-                }
+                Schema::table($tableName, static function (Blueprint $table) use ($index) {
+                    $table->dropIndex($index);
+                });
             }
 
             Schema::dropIfExists($tableName);

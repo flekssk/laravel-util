@@ -55,8 +55,7 @@ return [
 
 namespace App\Services\Entity;
 
-use App\Models\Entity;
-use FKS\Metadata\MetadataService;
+use App\Models\Entity;use src\Metadata\MetadataService;
 
 class EntityMetadataService extends MetadataService
 {
@@ -78,7 +77,7 @@ use App\Services\Entity\EntityMetadataService;
 class TestService 
 {
     /**
-    * @param EntityMetadataService|\FKS\Metadata\MetadataService $metadataService
+    * @param EntityMetadataService|\src\Metadata\MetadataService $metadataService
     */
     public function __construct(private readonly EntityMetadataService $metadataService)
     {

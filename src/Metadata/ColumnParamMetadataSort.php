@@ -24,7 +24,7 @@ class ColumnParamMetadataSort extends AbstractColumnParam
 
     public function getSortColumn($sortDefinition): string|Expression
     {
-        return $this->getTableAlias($sortDefinition) . '.' . $this->valueColumnName;
+        return $this->getTableAlias($sortDefinition) . 'Metadata' . $this->valueColumnName;
     }
 
     /**

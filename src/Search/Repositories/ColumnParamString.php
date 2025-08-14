@@ -8,7 +8,7 @@ use Illuminate\Contracts\Database\Query\Expression;
 
 class ColumnParamString extends AbstractColumnParam
 {
-    public function __construct(public string $sortColumn) {
+    public function __construct(public string|Expression $sortColumn) {
     }
 
     public function getSortColumn($sortDefinition): string|Expression

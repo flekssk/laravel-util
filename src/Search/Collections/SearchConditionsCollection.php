@@ -68,7 +68,6 @@ class SearchConditionsCollection extends Collection
     }
 
     /**
-     * @deprecated
      * @param string $paramName
      * @return Condition|null
      */

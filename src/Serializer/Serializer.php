@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FKS\Serializer;
 
 use BackedEnum;
+use Carbon\Carbon;
 use DomainException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -14,10 +15,6 @@ use FKS\ClassPropertiesParser\ScalarClassProperty;
 
 class Serializer implements SerializerInterface
 {
-    private array $systemProperties = [
-        'escapeWhenCastingToString',
-    ];
-
     public function deserializeFromJson(
         string $data,
         string $class,
@@ -48,17 +45,7 @@ class Serializer implements SerializerInterface
                 $result[] = new $class(...$this->convertToObjectProperties($class, $datum));
             }
         } else {
-            $constructorParameters = PropertiesParser::getConstructorPropertiesNames($class);
-            $classProperties = array_filter(
-                $this->convertToObjectProperties($class, $data),
-                function ($property, $key) use ($constructorParameters) {
-                    return in_array($key, $constructorParameters, true);
-                },
-                ARRAY_FILTER_USE_BOTH
-            );
-
-
-            $result = new $class(...$classProperties);
+            $result = new $class(...$this->convertToObjectProperties($class, $data));
         }
 
         return $result;
@@ -73,10 +60,8 @@ class Serializer implements SerializerInterface
             $serializedPropertyName = Str::snake($property->name);
 
             $value = $data[$serializedPropertyName] ?? null;
-            if (
-                !array_key_exists(Str::snake($serializedPropertyName), $data)
-                && $property->nullable
-                && $this->isCastable($value)
+            if (!array_key_exists(Str::snake($serializedPropertyName), $data) &&
+                $property->nullable && $this->isCastable($value)
             ) {
                 continue;
             }
@@ -89,6 +74,8 @@ class Serializer implements SerializerInterface
                         throw new DomainException("Property $property->name of class " . static::class . ' can not be nullable');
                     }
                     $value = $value !== null ? array_map(fn (array $data) => $this->deserializeFromArray($data, $property->type), $value) : $value;
+                } elseif ($property->type === Carbon::class) {
+                    $value = Carbon::parse($value);
                 } else {
                     $value = $this->deserializeFromArray($value, $property->type);
                 }
@@ -117,8 +104,7 @@ class Serializer implements SerializerInterface
         $array = [];
 
         foreach ($properties as $name => $property) {
-
-            if (!in_array($name, $hiddenProperties) && !in_array($name, $this->systemProperties)) {
+            if (!in_array($name, $hiddenProperties)) {
                 $array[Str::snake($name)] = $this->serializeProperty($property, Arr::get($hiddenProperties, $name, []));
             }
         }

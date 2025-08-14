@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace FKS\Search\Repositories\SearchQueryBuilders\MySQL;
 
-use FKS\ValueObjects\Id;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use FKS\Search\Helpers\SearchComponentConfigHelper;
@@ -17,7 +16,7 @@ class ContainsQueryBuilder implements BuilderInterface
     /**
      * @param ContainsCondition $condition
      */
-    public function applyCondition(Builder $builder, $condition, ColumnParamMap|string $column = null): void
+    public function applyCondition(Builder|\Illuminate\Database\Query\Builder $builder, $condition, ColumnParamMap|string $column = null): void
     {
         $ids = $this->prepareValues($condition);
         $filterHasNullValue = in_array(null, $condition->getValues(), true);
@@ -75,10 +74,10 @@ class ContainsQueryBuilder implements BuilderInterface
                                 if ($condition->isBoolean()) {
                                     $boolValue = $ids[0] ? 'TRUE' : 'FALSE';
                                     $query->where("SAFE_CAST($column as BOOLEAN)", $boolValue);
-                                } else if ($condition->isString() && $condition->isCaseInsensitive()) {
+                                } else if ($condition->isString()) {
                                     $query->whereIn(
                                         DB::raw('LOWER('. $column .')'),
-                                        array_map(fn ($id) => strtolower($id), $ids)
+                                        array_map(fn ($id) => strtolower($id), $ids),
                                     );
                                 } else {
                                     $query->whereIn($column, $ids);
@@ -140,8 +139,8 @@ class ContainsQueryBuilder implements BuilderInterface
             array_values(
                 array_filter($values, function ($value) {
                     return !empty($value) || $value === 0 || $value === false;
-                })
-            )
+                }),
+            ),
         );
 
         if ($condition->isBytes()) {

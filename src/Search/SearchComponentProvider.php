@@ -29,8 +29,15 @@ class SearchComponentProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Validator::extend('uuid_or_hex', function ($attribute, $value) {
+            try {
+                return (bool) Uuid::fromString($value)->getBytes();
+            } catch (Throwable) {
+                return false;
+            }
+        });
         $this->publishes([
-            __DIR__ . '/../../config/search.php' => config_path('search.php'),
-        ], 'search-config');
+            __DIR__ . '/../../config/FKS-search.php' => config_path('FKS-search.php'),
+        ], 'FKS-search-config');
     }
 }

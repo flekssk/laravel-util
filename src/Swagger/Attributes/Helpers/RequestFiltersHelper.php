@@ -9,6 +9,7 @@ use FKS\Search\Requests\RuleBuilders\DateRangeRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\MetadataRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\NumericRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\StartsWithRuleBuilder;
+use FKS\Search\Requests\RuleBuilders\StringCombinedSearchRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\StringSearchRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\TimestampRangeRuleBuilder;
 
@@ -21,6 +22,7 @@ class RequestFiltersHelper
         TimestampRangeRuleBuilder::class => 'string',
         StartsWithRuleBuilder::class => 'string',
         StringSearchRuleBuilder::class => 'string',
+        StringCombinedSearchRuleBuilder::class => 'string',
         MetadataRuleBuilder::class => 'object',
     ];
     public static array $filterBuilderToExampleMap = [

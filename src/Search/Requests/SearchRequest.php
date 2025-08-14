@@ -18,15 +18,33 @@ abstract class SearchRequest extends FormRequest
     public const DEFAULT_PER_PAGE = 20;
     public const MAX_PER_PAGE = 200;
 
+    abstract public static function getAvailableFields(): array;
+    abstract public static function getSortingDefinitions(): array;
+
     public static function getAdditionalFilterSwaggerProperties(): array
     {
         return [];
     }
 
+    public static function getFilteringDefinitions(): FilteringDefinitions
+    {
+        return new FilteringDefinitions();
+    }
+
+    public static function getSettingsDefinitions(): SettingsDefinitions
+    {
+        return new SettingsDefinitions();
+    }
+
+    public static function getPaginationInstance(): PaginatorInterface
+    {
+        return app(PaginatorInterface::class);
+    }
+
     public function rules(): array
     {
         $availableFieldsParamName = SearchComponentConfigHelper::getConfig()->availableFieldsParamName;
-        $paginatorInstance = app(PaginatorInterface::class);
+        $paginatorInstance = static::getPaginationInstance();
         $rules = [
             $availableFieldsParamName => [
                 'array',
@@ -46,13 +64,13 @@ abstract class SearchRequest extends FormRequest
                     return true;
                 },
             ],
-
         ];
         return array_merge(
             $rules,
             $this->sortRules(),
             $this->filteringRules(),
             $this->additionalRules(),
+            self::getSettingsDefinitions()->validationRules(),
             $paginatorInstance::getPaginatorValidatorRules(static::getPerPageMax()),
         );
     }
@@ -166,7 +184,7 @@ abstract class SearchRequest extends FormRequest
     public function getSearchConditions(): SearchConditions
     {
         $filter = new SearchConditionsCollection();
-        $paginatorInstance = app(PaginatorInterface::class);
+        $paginatorInstance = static::getPaginationInstance();
         $requestFilters = Arr::get($this->all(), SearchComponentConfigHelper::getConfig()->filterParamName, []);
 
         /** @var RuleBuilder $builder */
@@ -192,14 +210,6 @@ abstract class SearchRequest extends FormRequest
             static fn($item) => explode('.', $item)[0] ?? null,
             array_keys($this->additionalRules()),
         ));
-        $additionalParams = [];
-        foreach ($additionalParamNames as $paramName) {
-            $value = $this->get($paramName);
-            if ($value === null) {
-                continue;
-            }
-            $additionalParams[$paramName] = $value;
-        }
 
         $sorts = collect($this->get(SearchComponentConfigHelper::getConfig()->sortParamName, []));
 
@@ -217,12 +227,11 @@ abstract class SearchRequest extends FormRequest
         }
 
         return new SearchConditions(
-            $this->get('available_fields', $this->getAvailableFields()),
+            $this->get(SearchComponentConfigHelper::getConfig()->availableFieldsParamName, $this->getAvailableFields()),
             $filter,
-            collect($additionalParams),
-            (bool)$this->get('only_counter', false),
             $sorts,
             $paginatorInstance->setupFromRequest($this),
+            static::getSettingsDefinitions()
         );
     }
 
@@ -235,10 +244,4 @@ abstract class SearchRequest extends FormRequest
     {
         return self::DEFAULT_PER_PAGE;
     }
-
-    abstract public static function getAvailableFields(): array;
-
-    abstract public static function getFilteringDefinitions(): FilteringDefinitions;
-
-    abstract public static function getSortingDefinitions(): array;
 }

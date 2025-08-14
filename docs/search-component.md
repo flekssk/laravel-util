@@ -11,14 +11,14 @@ It also has the ability to add additional parameters.
 
 ## Settings
 
-First of all, you need to register a service provider `\FKS\Providers\SearchComponentProvider`.
+First of all, you need to register a service provider `\FKS\Search\SearchComponentProvider`.
 
 You may want to change default config parameters according to your needs. 
-To publish default Search Component config run `php artisan vendor:publish --tag=FKS-search-config`   
+To publish default Search Component config run `php artisan vendor:publish --tag=search-config`   
 
 ## Config
 
-You can define a configuration file `FKS-search.php` which contains parameters
+You can define a configuration file `search.php` which contains parameters
 
 **paginator** - this parameter should contains class string which implements FKSPaginatorInterface::class interface, and will be used for pagination.
 **use_raw_query_statements** - if this parameter is true all queries builds by search engine will be generated as raw queries, except string (query parameters) 
@@ -28,7 +28,7 @@ You can define a configuration file `FKS-search.php` which contains parameters
 
 ### First step
 
-Define own `*Request` class base on `\FKS\Http\Requests\SearchRequest`.
+Define own `*Request` class base on `\FKS\Swagger\Http\Requests\SearchRequest`.
 
 <details>
   <summary>Example</summary>
@@ -40,8 +40,7 @@ declare(strict_types=1);
 
 namespace Modules\FKSNotifications\Http\Requests\Api\V1;
 
-use FKS\Http\Requests\FilteringDefinitions;
-use FKS\Http\Requests\SearchRequest;
+use src\Search\Requests\FilteringDefinitions;use src\Search\Requests\SearchRequest;
 
 /**
  * Class NotificationSubscriptionsGetListRequest
@@ -56,8 +55,8 @@ class NotificationSubscriptionsGetListRequest extends SearchRequest
     public static function getAvailableFields(): array
     {
         return [
-            'FKS_notification_subscription_id',
-            'FKS_notification_type_id',
+            'notification_subscription_id',
+            'notification_type_id',
             'notification_time_from',
             'notification_time_to',
             'only_workdays',
@@ -76,7 +75,7 @@ class NotificationSubscriptionsGetListRequest extends SearchRequest
     public static function getFilteringDefinitions(): FilteringDefinitions
     {
         return FilteringDefinitions::create(static function (FilteringDefinitions $ruleBuilder) {
-            $ruleBuilder->containsInteger('FKS_notification_type_id');
+            $ruleBuilder->containsInteger('notification_type_id');
             $ruleBuilder->containsBytes('data_owner_id');
             $ruleBuilder->containsBytes('user_id');
             $ruleBuilder->timestampRange('created_at');
@@ -89,7 +88,7 @@ class NotificationSubscriptionsGetListRequest extends SearchRequest
     public static function getSortingDefinitions(): array
     {
         return [
-            'FKS_notification_type_id',
+            'notification_type_id',
             'created_at',
         ];
     }
@@ -171,7 +170,7 @@ class NotificationSubscriptionsGetListRequest extends SearchRequest
    ```
    search by database string values
    - `$field` - request parameter name located in filter array
-   - `$case` - one of `FKS\Enums\SearchComponent\SearchCasesEnum` item, or an array of items
+   - `$case` - one of `FKSEnums\SearchComponent\SearchCasesEnum` item, or an array of items
       - `CAST_TO_LOWER` - cast search string to lower case and cast database target field to lower case
       - `WITHOUT_SPACES` - remove all spaces from search string and database field
    - `$minChars` - minimum allowed chars validation
@@ -206,7 +205,7 @@ public function index(
 
 ### Third step
 
-Define own `*Repository` class base on `\FKS\Repositories\SearchRepository`.
+Define own `*Repository` class base on `\FKSRepositories\SearchRepository`.
 
 Define in the repository method example `getList(SearchConditions $searchConditions)`.
 
@@ -220,9 +219,7 @@ declare(strict_types=1);
 
 namespace Modules\FKSNotifications\Repositories;
 
-use Modules\FKSNotifications\Entities\NotificationSubscription;
-use FKS\Repositories\SearchRepository;
-use FKS\ValueObjects\SearchConditions\SearchConditions;
+use Modules\FKSNotifications\Entities\NotificationSubscription;use src\Search\Repositories\SearchRepository;use src\Search\ValueObjects\SearchConditions;
 
 /**
  * Class NotificationSubscriptionRepository
@@ -274,7 +271,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V3;
 
-use FKS\Http\Requests\SearchRequest;
+use src\Search\Requests\SearchRequest;
 
 /**
  * Class TasksListRequest
@@ -346,8 +343,8 @@ In children based on `SearchRepository` need be defined methods `getMapFilterPar
             'member_id' => 'tasks.member_id',
             'task_status_id' => 'tasks.task_status_id',
             'task_type_id' => 'tasks.task_type_id',
-            'days_since_lov' => 'FKS_members.days_since_lov',
-            'is_seen_in_FKS' => 'FKS_members.is_seen_in_FKS',
+            'days_since_lov' => 'members.days_since_lov',
+            'is_seen_in_FKS' => 'members.is_seen_in_FKS',
             'created_at' => 'tasks.created_at',
             'updated_at' => 'tasks.updated_at',
             'assigned_at' => 'tasks.assigned_at',
@@ -364,10 +361,10 @@ In children based on `SearchRepository` need be defined methods `getMapFilterPar
             'created_at' => 'tasks.created_at',
             'updated_at' => 'tasks.updated_at',
             'assigned_at' => 'tasks.assigned_at',
-            'member_full_name' => 'FKS_members.member_full_name',
-            'pcp_name' => 'FKS_pcps.pcp_name',
-            'member_caregaps_pending' => 'FKS_members.member_caregaps_pending',
-            'days_since_lov' => 'FKS_members.days_since_lov',
+            'member_full_name' => 'members.member_full_name',
+            'pcp_name' => 'pcps.pcp_name',
+            'member_caregaps_pending' => 'members.member_caregaps_pending',
+            'days_since_lov' => 'members.days_since_lov',
         ];
     }
 ```
@@ -387,12 +384,12 @@ In children based on `SearchRepository` in method `getJoinsDefinitions` can be d
     {
         return [
             // this callback apply only if passed filters or sorting
-            // used in mapping to column prefix `FKS_members`
-            'FKS_members' => function ($builder) {
+            // used in mapping to column prefix `members`
+            'members' => function ($builder) {
                 $builder->join(
-                    'FKS_members',
+                    'members',
                     'tasks.member_id',
-                    'FKS_members.member_id',
+                    'members.member_id',
                     null,
                     'HASH',
                 );
@@ -400,9 +397,9 @@ In children based on `SearchRepository` in method `getJoinsDefinitions` can be d
             // it will always be applied and the join defined inside too
             function ($builder) {
                 $builder->join(
-                    'FKS_pcps',
+                    'pcps',
                     'tasks.pcp_id',
-                    'FKS_pcps.pcp_id',
+                    'pcps.pcp_id',
                     null,
                     'HASH',
                 );
@@ -410,13 +407,13 @@ In children based on `SearchRepository` in method `getJoinsDefinitions` can be d
             // in this case, the second argument of the callback can be taken $searchConditions
             // to analyze it and decide whether to apply this join
             function ($builder, SearchConditions $searchConditions) {
-                if (!$searchConditions->getAdditionalParams()->get('FKS_pcps_join')) {
+                if (!$searchConditions->getAdditionalParams()->get('pcps_join')) {
                     return;
                 }
                 $builder->join(
-                    'FKS_pcps',
+                    'pcps',
                     'tasks.pcp_id',
-                    'FKS_pcps.pcp_id',
+                    'pcps.pcp_id',
                     null,
                     'HASH',
                 );
@@ -506,102 +503,7 @@ To override this behavior, change `paginator` config parameter to LimitOffsetPag
   <summary>Example</summary>
 
 ```PHP
-    'paginator' => \FKS\ValueObjects\SearchConditions\LimitOffsetPaginator::class,
+    'paginator' => \FKSSearch\ValueObjects\LimitOffsetPaginator::class,
 ```
 
 </details>
-
-## Elastic search
-
-To use ElasticSearch repository add to the AppServiceProvider the ElasticSearch
-Client initialization:
-```PHP
-$this->app->bind(\Elastic\Elasticsearch\Client::class, function ($app) {
-    return \Elastic\Elasticsearch\ClientBuilder::create()
-        ->setHosts($app['config']->get('services.elasticsearch.hosts', ['localhost:9200']))
-        ->build();
-});
-```
-
-Repository example:
-
-<details>
-
-```PHP
-<?php
-
-namespace App\Repositories\ElasticSearch;
-
-use Elastic\Elasticsearch\Client;
-use FKS\Repositories\ElasticSearchRepository;
-use FKS\ValueObjects\SearchConditions\SearchConditions;
-
-class ExtractionTaskRepository extends ElasticSearchRepository
-{
-    public function __construct(
-        Client $client,
-        private \App\Repositories\ExtractionTaskRepository $extractionTaskRepository,
-    )
-    {
-        parent::__construct($client);
-    }
-
-    protected function getIndexName(): string
-    {
-        return 'extraction_tasks';
-    }
-
-    public function indexAll()
-    {
-        $offset = 0;
-        $limit = 1000;
-        $query = $this->extractionTaskRepository->getCollectionsBaseQuery()
-            ->limit($limit);
-
-        do {
-            $tasks = $query
-                ->offset($offset)
-                ->get()
-                ->toArray();
-
-            $offset += $limit;
-
-            $params = ['body' => []];
-            foreach ($tasks as $task) {
-                $params['body'] [] = [
-                    'index' => [
-                        '_index' => $this->getIndexName(),
-                        '_id' => $task['task_id']
-                    ]
-                ];
-                $params['body'] [] = $task;
-            }
-
-            $this->client->bulk($params);
-        } while ($limit === count($tasks));
-    }
-
-    public function getList(SearchConditions $searchConditions)
-    {
-        $this->applyAllConditions($this->builder, $searchConditions);
-
-        return $this->get();
-    }
-
-    protected function getMapFilterParamToColumn(): array
-    {
-        return [
-            'member_id' => 'member_id.keyword',
-        ];
-    }
-
-    protected function getMapSortFieldToColumn(): array
-    {
-        return [
-            'member_name' => 'member_full_name.keyword',
-        ];
-    }
-}
-```
-</details>
-

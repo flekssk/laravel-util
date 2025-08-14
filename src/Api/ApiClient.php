@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace FKS\Api;
 
-use FKS\Api\Enrichers\RequestMiddlewareInterface;
-use FKS\Api\ValueObjects\ApiClientConfig;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
@@ -23,10 +21,8 @@ class ApiClient
     public const DEFAULT_REQUEST_ATTEMPTS_COUNT = 3;
     public const DEFAULT_SLEEP_SECONDS = 1;
 
-    public function __construct(
-        protected Client $client,
-        protected ApiClientConfig $config,
-    ) {
+    public function __construct(protected Client $client)
+    {
     }
 
     /**
@@ -39,14 +35,14 @@ class ApiClient
         $response,
         string $responseClass = null,
         string $elementClass = null,
-        array $propertiesMapping = [],
+        array $propertiesMapping = []
     ): ApiResponse {
         try {
             $data = json_decode(
                 (string) $response->getBody()->getContents(),
                 true,
                 512,
-                JSON_THROW_ON_ERROR,
+                JSON_THROW_ON_ERROR
             );
 
             $elements = array_map(static function ($data) use ($elementClass, $propertiesMapping) {
@@ -82,7 +78,7 @@ class ApiClient
                     (string) $response->getBody()->getContents(),
                     $class,
                     $propertiesMapping,
-                    excludedKeys: $excludedKeys,
+                    excludedKeys: $excludedKeys
                 );
         } catch (JsonException $exception) {
             throw new RuntimeException('Invalid JSON response from server: ' . $exception->getMessage());
@@ -94,14 +90,14 @@ class ApiClient
         UriInterface|string $uri,
         array $options = [],
         int $retryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
-        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS,
+        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
         return $this->sendRequest(
             function () use ($uri, $options) {
-                return $this->client->get($uri, $this->beforeRequest('get', $uri, $options));
+                return $this->client->get($uri, $options);
             },
             $retryCount,
-            $sleepOnRetrySeconds,
+            $sleepOnRetrySeconds
         );
     }
 
@@ -109,14 +105,14 @@ class ApiClient
         UriInterface|string $uri,
         array $options = [],
         int $retryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
-        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS,
+        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
         return $this->sendRequest(
             function () use ($uri, $options) {
-                return $this->client->post($uri, $this->beforeRequest('post', $uri, $options));
+                return $this->client->post($uri, $options);
             },
             $retryCount,
-            $sleepOnRetrySeconds,
+            $sleepOnRetrySeconds
         );
     }
 
@@ -124,14 +120,14 @@ class ApiClient
         UriInterface|string $uri,
         array $options = [],
         int $retryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
-        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS,
+        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
         return $this->sendRequest(
             function () use ($uri, $options) {
-                return $this->client->delete($uri, $this->beforeRequest('delete', $uri, $options));
+                return $this->client->delete($uri, $options);
             },
             $retryCount,
-            $sleepOnRetrySeconds,
+            $sleepOnRetrySeconds
         );
     }
 
@@ -139,21 +135,55 @@ class ApiClient
         UriInterface|string $uri,
         array $options = [],
         int $retryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
-        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS,
+        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
         return $this->sendRequest(
             function () use ($uri, $options) {
-                return $this->client->patch($uri, $this->beforeRequest('patch', $uri, $options));
+                return $this->client->patch($uri, $options);
             },
             $retryCount,
-            $sleepOnRetrySeconds,
+            $sleepOnRetrySeconds
         );
+    }
+
+    protected function sendFile(
+        UriInterface|string $uri,
+        string $fileContent,
+        string $fileName,
+        string $fieldName = 'file',
+        array $fields = [],
+    ): ResponseInterface {
+        $multipart = [];
+
+        $multipart[] = [
+            'name'     => 'file',
+            'contents' => $fileContent,
+            'filename' => basename($fileName),
+        ];
+
+        foreach ($fields as $name => $value) {
+            $multipart[] = [
+                'name'     => $name,
+                'contents' => $value,
+            ];
+        }
+
+        $options = [
+            'multipart' => $multipart,
+        ];
+
+        return $this->post($uri, $options);
+    }
+
+    protected function head(UriInterface|string $uri, array $options = []): ResponseInterface
+    {
+        return $this->client->head($uri, $options);
     }
 
     private function sendRequest(
         callable $callback,
         int $maxRetryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
-        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS,
+        int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
         $attempt = 0;
         $needRetry = true;
@@ -170,7 +200,7 @@ class ApiClient
                     || !in_array(
                         $exception->getCode(),
                         [Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_FORBIDDEN, Response::HTTP_NOT_FOUND],
-                        true,
+                        true
                     )
                 ) {
                     throw $exception;
@@ -212,17 +242,5 @@ class ApiClient
     protected function getSerializerInstance(): SerializerInterface
     {
         return app(Serializer::class);
-    }
-
-    protected function beforeRequest(string $method, string $uri, array $options): array
-    {
-        foreach ($this->config->requestMiddlewares as $item) {
-            /** @var class-string<RequestMiddlewareInterface> $middleware */
-            $middleware = app($item);
-
-            $options = $middleware->handle($method, $uri, $options);
-        }
-
-        return $options;
     }
 }

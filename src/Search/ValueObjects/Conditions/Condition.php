@@ -18,4 +18,9 @@ abstract class Condition
     {
         return $this->filterParam;
     }
+
+    public function setFilterParam(string $filterParam): void
+    {
+        $this->filterParam = $filterParam;
+    }
 }

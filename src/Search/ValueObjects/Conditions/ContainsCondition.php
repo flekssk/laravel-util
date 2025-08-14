@@ -88,4 +88,9 @@ class ContainsCondition extends Condition
     {
         return $this->type === ContainsCondition::TYPE_HEX_STRING;
     }
+
+    public static function make(string $filterParam, array $values, bool $contains, string $type): static
+    {
+        return new static($filterParam, $values, $contains, $type);
+    }
 }

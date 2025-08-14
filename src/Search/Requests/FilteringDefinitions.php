@@ -16,6 +16,7 @@ use FKS\Search\Requests\RuleBuilders\NumericRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\OneOfEnumRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\RuleBuilder;
 use FKS\Search\Requests\RuleBuilders\StartsWithRuleBuilder;
+use FKS\Search\Requests\RuleBuilders\StringCombinedSearchRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\StringSearchRuleBuilder;
 use FKS\Search\Requests\RuleBuilders\TimestampRangeRuleBuilder;
 use FKS\Search\ValueObjects\Conditions\ContainsCondition;
@@ -34,9 +35,15 @@ class FilteringDefinitions implements Iterator, Arrayable
         return $this;
     }
 
-    public function contains(string $filterParam): ContainsRuleBuilder
+    public function array(string $filterParam): ContainsRuleBuilder
+    {
+        return $this->contains($filterParam, true)->setIsArray(true);
+    }
+
+    public function contains(string $filterParam, bool $isArray = false): ContainsRuleBuilder
     {
         $ruleBuilder = new ContainsRuleBuilder($filterParam);
+        $ruleBuilder->setIsArray($isArray);
         $this->addDefinition($ruleBuilder);
         return $ruleBuilder;
     }
@@ -115,6 +122,19 @@ class FilteringDefinitions implements Iterator, Arrayable
         return tap(new StringSearchRuleBuilder($field, $case, $minChars, $maxChars), function ($ruleBuilder) {
             $this->addDefinition($ruleBuilder);
         });
+    }
+
+    public function combinedSearch(
+        string $filerName,
+        array $searchColumns,
+        SearchCasesEnum|array $case = SearchCasesEnum::CAST_TO_LOWER,
+        int $minChars = 3,
+        int $maxChars = 100,
+    ) {
+        return tap(
+            new StringCombinedSearchRuleBuilder($filerName, $searchColumns, $case, $minChars, $maxChars),
+            fn ($ruleBuilder) => $this->addDefinition($ruleBuilder)
+        );
     }
 
     public function oneOfEnum(string $filterParam, string $enumClassString, ?BackedEnum $shouldBeSkipped = null): OneOfEnumRuleBuilder

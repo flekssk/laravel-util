@@ -9,8 +9,7 @@ use FKS\Search\Requests\SearchRequest;
 interface PaginatorInterface
 {
     public static function getPaginatorValidatorRules(int $perPageMaxValue): array;
-
+    public function getSwaggerProperties(): array;
     public function applyPagination($builder): void;
-
     public function setupFromRequest(SearchRequest $searchRequest): self;
 }

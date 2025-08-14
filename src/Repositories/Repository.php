@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use ReflectionException;
@@ -90,6 +91,15 @@ abstract class Repository implements RepositoryInterface
             ->limit(1)
             ->get()
             ->first();
+    }
+
+    /**
+     * @param array|WhereCondition $where
+     * @return ModelClass|null
+     */
+    public function findByWhere(array|WhereCondition $where): ?Model
+    {
+        return $this->getByWhere($where)->first();
     }
 
     /**
@@ -334,6 +344,11 @@ abstract class Repository implements RepositoryInterface
         return $this->getQuery()->insert($values);
     }
 
+    public function insertOrIgnore(array $values): int
+    {
+        return $this->getQuery()->insertOrIgnore($values);
+    }
+
     public function getQuery(): Builder
     {
         return $this->isSoftDeleteExpected
@@ -447,5 +462,21 @@ abstract class Repository implements RepositoryInterface
         } else {
             $query->where($where);
         }
+    }
+
+    /**
+     * @return ModelClass
+     */
+    public function replicate(Model $order, array $attributes = []): Model
+    {
+        return tap($order->replicate()->fill($attributes))->save();
+    }
+
+    /**
+     * @return EloquentCollection<ModelClass>
+     */
+    public function findMany(array $ids): EloquentCollection
+    {
+        return $this->getQuery()->findMany($ids);
     }
 }

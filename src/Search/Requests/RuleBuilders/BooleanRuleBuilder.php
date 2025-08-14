@@ -12,7 +12,7 @@ class BooleanRuleBuilder extends RuleBuilder
         $filterParam = str_replace('.', '\.', $this->getFilterParam());
 
         return [
-            "$filterParamName.$filterParam" => 'boolean' . ($this->required ? "|required" : ''),
+            "$filterParamName.$filterParam" => 'boolean' . ($this->required ? "|required" : '') . ($this->isNullable() ? '|nullable' : ''),
         ];
     }
 

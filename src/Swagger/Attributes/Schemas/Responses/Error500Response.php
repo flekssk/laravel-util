@@ -19,9 +19,10 @@ class Error500Response extends Response
             description: 'Server error',
             content: new JsonContent(
                 properties: [
-                    new IntegerProperty('code', 500),
-                    new StringProperty('status', 'error'),
-                    new ArrayProperty('data', 'string', 'Server error'),
+                    new StringProperty('message', 'error'),
+                    new StringProperty('exception', 'error'),
+                    new StringProperty('file', '/var/www/file.txt'),
+                    new IntegerProperty('line', 123),
                 ]
             )
         );

@@ -19,12 +19,12 @@ class MetadataConfigHelper
     public static function getModelConfig(string $modelClass): MetadataConfig
     {
         if (!isset(self::$loadedConfigs[$modelClass])) {
-            $config = config("metadata.entities")[$modelClass] ?? null;
+            $config = config("FKS-metadata.entities")[$modelClass] ?? null;
 
             if ($config === null) {
                 throw new Exception(
                     sprintf(
-                        'Metadata config for %s model not defined in config/metadata.php.',
+                        'Metadata config for %s model not defined in config/FKS-metadata.php.',
                         $modelClass,
                     )
                 );

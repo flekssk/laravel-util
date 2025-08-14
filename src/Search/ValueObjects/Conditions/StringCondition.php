@@ -10,7 +10,6 @@ class StringCondition extends Condition
 {
     public const TYPE_STRING = 'string';
 
-    protected string $value;
     protected string $operator;
 
     public static function allowedTypes(): array
@@ -18,12 +17,15 @@ class StringCondition extends Condition
         return [self::TYPE_STRING];
     }
 
-    public function __construct(string $filterParam, string $value, string $operator, string $type)
-    {
+    public function __construct(
+        string $filterParam,
+        public readonly string $value,
+        string $operator,
+        string $type
+    ) {
         if (!in_array($type, self::allowedTypes(), true)) {
             throw new DomainException("Bad type '$type'. Allowed only: " . implode(', ', self::allowedTypes()));
         }
-        $this->value = $value;
         $this->operator = $operator;
         $this->filterParam = $filterParam;
         $this->type = $type;

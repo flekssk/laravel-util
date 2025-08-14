@@ -34,22 +34,6 @@ class DateRangeQueryBuilder implements BuilderInterface
             $column = $column->tableName . '.' . $column->tableValuesColumn;
         }
 
-        if ($isRawQueryExpected || $condition->castColumn) {
-            if ($condition->isTimestamp()) {
-                $from = $from->format('Y-m-d H:i:s e');
-                $to = $to->format('Y-m-d H:i:s e');
-            }
-            if ($condition->castColumn) {
-                $castAs = $condition->isTimestamp() ? 'TIMESTAMP' : 'DATE';
-                if ($condition->castAsUTC && $condition->isTimestamp()) {
-                    $column = "CONCAT($column, ' UTC')";
-                }
-                $column = "SAFE_CAST($column AS $castAs)";
-            }
-
-            $builder->whereRaw("$column BETWEEN '$from' AND '$to'");
-        } else {
-            $builder->whereBetween($column, [$from, $to]);
-        }
+        $builder->whereBetween($column, [$from, $to]);
     }
 }

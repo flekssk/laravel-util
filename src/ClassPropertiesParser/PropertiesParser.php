@@ -6,7 +6,6 @@ namespace FKS\ClassPropertiesParser;
 
 use Doctrine\Common\Annotations\PhpParser;
 use DomainException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use ReflectionClass;
 
@@ -107,25 +106,15 @@ class PropertiesParser
                 $properties[] = new ArrayClassProperty($property->getName(),  is_object($type) ? $type->getName() : $type);
             } elseif ($propertyIsObject) {
                 $properties[] = new ObjectClassProperty($property->getName(),  is_object($type) ? $type->getName() : $type);
-            } elseif ($property->class === Collection::class) {
-                $properties[] = new ScalarClassProperty($property->getName(), 'array', false);
             } else {
                 $properties[] = new ScalarClassProperty(
                     $property->getName(),
                     is_object($type) ? $type->getName() : $type,
-                    $property->getType()?->allowsNull() ?? false,
+                    $property->getType()->allowsNull(),
                 );
             }
         }
 
         return $properties;
-    }
-
-    public static function getConstructorPropertiesNames(string $classString): array
-    {
-        $reflection = new ReflectionClass($classString);
-        $constructor = $reflection->getMethod('__construct');
-
-        return array_map(static fn ($param) => $param->name, $constructor->getParameters());
     }
 }

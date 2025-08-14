@@ -7,6 +7,7 @@ namespace FKS\Search\Repositories;
 use Exception;
 use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use FKS\Repositories\Repository;
@@ -16,6 +17,7 @@ use FKS\Search\Contracts\SearchQueryBuilderFactoryInterface;
 use FKS\Search\DTO\CountsResultDTO;
 use FKS\Search\Factories\ColumnParamFactory;
 use FKS\Search\ValueObjects\Conditions\Condition;
+use FKS\Search\ValueObjects\FiltersPreset;
 use FKS\Search\ValueObjects\SearchConditions;
 
 abstract class SearchRepository extends Repository
@@ -30,7 +32,30 @@ abstract class SearchRepository extends Repository
         return [];
     }
 
+    public static function getMapAvailableFieldToSelect(): array
+    {
+        return [];
+    }
+
+    public static function getMapAvailableFieldToWith(): array
+    {
+        return [];
+    }
+
     public static function getMapFilterParamToQueryBuilderClosure(): array
+    {
+        return [];
+    }
+
+    public static function excludeAvailableFieldsFromSelect(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return FiltersPreset[]
+     */
+    public static function getFiltersPresets(): array
     {
         return [];
     }
@@ -46,7 +71,6 @@ abstract class SearchRepository extends Repository
         }
 
         $this->applyAllConditions($preparedBuilder, $conditions, $skipSorting);
-
         return $returnBuilder ? $preparedBuilder : $this->getByQuery($preparedBuilder);
     }
 
@@ -60,17 +84,25 @@ abstract class SearchRepository extends Repository
         }
 
         $selectFieldsToGroupByString = '';
+
         if (!empty($searchConditions->getAvailableFields())) {
             foreach ($searchConditions->getAvailableFields() as $availableField) {
                 $mappedAvailableField = self::getMapFilterParamToColumn()[$availableField] ?? $availableField;
-                $availableFieldForSelect = self::getMapFilterParamToColumn()[$availableField] ??  static::getEntityInstance()->getTable() . '.' . $availableField;
-                $selectFieldsToGroupByString .= $availableFieldForSelect . ',';
+                $availableFieldForSelect = self::getMapFilterParamToColumn()[$availableField] ??  static::getEntityInstance(
+                )->getTable() . 'Repositories' . $availableField;
+                $mapper = static::getMapAvailableFieldToSelect()[$availableField] ?? null;
+                if ($mapper instanceof \Closure) {
+                    $mapper($preparedBuilder);
+                } else {
+                    $selectFieldsToGroupByString .= $availableFieldForSelect . ',';
+                }
                 $preparedBuilder->groupBy($mappedAvailableField);
             }
         }
 
-        $preparedBuilder->selectRaw($selectFieldsToGroupByString . 'COUNT(*) AS count');
         $this->applyAllConditionsForCounts($preparedBuilder, $searchConditions);
+
+        $preparedBuilder->selectRaw($selectFieldsToGroupByString . 'COUNT(*) AS count');
 
         if ($returnBuilder) {
             return $preparedBuilder;
@@ -91,7 +123,7 @@ abstract class SearchRepository extends Repository
             $totalCounts = $counts[0]['count'];
         }
 
-        return new CountsResultDTO($totalCounts, $list->toArray());
+        return new CountsResultDTO($totalCounts, $this->getQuery()->count(), $list->toArray());
     }
 
     public function getSortFieldDefinition(array $sortDefinition)
@@ -104,11 +136,6 @@ abstract class SearchRepository extends Repository
     }
 
     protected function getJoinsDefinitions(): array
-    {
-        return [];
-    }
-
-    protected function getAdditionalConditionsDefinitions(): array
     {
         return [];
     }
@@ -163,6 +190,7 @@ abstract class SearchRepository extends Repository
      */
     protected function applyAllConditions($builder, SearchConditions $searchConditions, bool $skipSorting = false): void
     {
+        $this->applyFiltersPresets($builder, $searchConditions);
         $this->applyJoins($builder, $searchConditions);
         $this->applySearchConditions($builder, $searchConditions);
         if (!$skipSorting) {
@@ -171,7 +199,37 @@ abstract class SearchRepository extends Repository
         if ($searchConditions->getPagination() !== null) {
             $this->applyPagination($builder, $searchConditions->getPagination());
         }
-        $this->applyAdditionalSearchConditions($builder, $searchConditions);
+
+        $select = [];
+
+        if ($searchConditions->getAvailableFields() !== []) {
+            foreach ($searchConditions->getAvailableFields() as $availableField) {
+                if (in_array($availableField, static::excludeAvailableFieldsFromSelect(), true)) {
+                    continue;
+                }
+                if (array_key_exists($availableField, static::excludeAvailableFieldsFromSelect())) {
+                    $select = array_merge($select, static::excludeAvailableFieldsFromSelect()[$availableField]);
+                    continue;
+                }
+
+                $mapper = static::getMapAvailableFieldToSelect()[$availableField] ?? null;
+                if ($mapper instanceof \Closure) {
+                    $mapper($builder);
+                } elseif (is_a($mapper, Expression::class)) {
+                    $select[] = $mapper;
+                } elseif (is_array($mapper)) {
+                    $select = array_merge($select, $mapper);
+                } elseif (is_string($mapper)) {
+                    $select[] = $mapper . ' AS ' . $availableField;
+                } elseif(array_keys(static::getMapAvailableFieldToWith(), $availableField)) {
+                    $builder->with(static::getMapAvailableFieldToWith()[$availableField]);
+                } else {
+                    $select[] = $this->entityInstance->getTable() . 'Repositories' . $availableField;
+                }
+            }
+
+            $builder->select($select);
+        }
     }
 
     /**
@@ -181,25 +239,9 @@ abstract class SearchRepository extends Repository
      */
     protected function applyAllConditionsForCounts($builder, SearchConditions $searchConditions): void
     {
+        $this->applyFiltersPresets($builder, $searchConditions);
         $this->applyJoins($builder, $searchConditions);
         $this->applySearchConditions($builder, $searchConditions);
-        $this->applyAdditionalSearchConditions($builder, $searchConditions);
-    }
-
-    /**
-     * @param $builder
-     * @param SearchConditions $searchConditions
-     * @return void
-     */
-    protected function applyAdditionalSearchConditions($builder, SearchConditions $searchConditions): void
-    {
-        foreach ($this->getAdditionalConditionsDefinitions() as $condition) {
-            if (is_callable($condition)) {
-                $condition($builder, $searchConditions);
-            } else {
-                $this->$condition($builder, $searchConditions);
-            }
-        }
     }
 
     /**
@@ -207,50 +249,33 @@ abstract class SearchRepository extends Repository
      * @param SearchConditions $searchConditions
      * @return void
      */
-    protected function applyJoins($builder, SearchConditions $searchConditions): void
+    protected function applyJoins($builder, SearchConditions $conditions): void
     {
-        $needApply = static function ($key) use ($searchConditions, $builder): bool {
-            foreach ($searchConditions->getSort() as ['field' => $field]) {
-                $columnParts = explode('.', $field);
-                $joinParamsKey = array_shift($columnParts);
-                $column = static::getMapSortFieldToColumn()[$joinParamsKey] ?? '';
-                $column = $column instanceof ColumnParamMap ? $column->tableName . '.' . $column->tableColumn : $column;
-                $column = ($column instanceof ColumnParamRaw && $column->tableName)
-                    ? $column->tableName . '.'
-                    : $column;
+        $joinsDefinitions = $this->getJoinsDefinitions();
+        if (empty($joinsDefinitions)) {
+            return;
+        }
 
-                if (str_starts_with($column, "$key.")) {
-                    return true;
+        $usedKeys = [];
+        foreach (['availableFields', 'sort', 'filter'] as $type) {
+            foreach ($conditions->{'get' . ucfirst($type)}() as $value) {
+                $field = is_array($value) ? $value['field'] ?? '' : $value;
+                if ($field instanceof Condition) {
+                    $field = $field->getFilterParam();
                 }
+                $field = static::getMapFilterParamToColumn()[$field] ?? $field;
+                $parts = explode('.', $field);
+                $usedKeys[] = array_shift($parts);
             }
-            /** @var Condition $condition */
-            foreach ($searchConditions->getFilter() as $condition) {
-                $columnParts = explode('.', $condition->getFilterParam());
-                $joinParamsKey = array_shift($columnParts);
-                $column = static::getMapFilterParamToColumn()[$joinParamsKey] ?? '';
-                $column = $column instanceof ColumnParamMap ? $column->tableName . '.' . $column->tableColumn : $column;
-                if (str_starts_with($column, "$key.")) {
-                    return true;
-                }
-            }
+        }
+        $usedKeys = array_unique($usedKeys);
 
-            $columns = $builder?->getQuery()?->columns ?? [];
-            foreach ($columns as $column) {
-                if(is_string($column)) {
-                    $columnParts = explode('.', $column);
-                    if ($columnParts[0] === $key) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        };
-        foreach ($this->getJoinsDefinitions() as $key => $join) {
-            if (is_int($key) || $needApply($key)) {
+        foreach ($joinsDefinitions as $key => $join) {
+            if (is_int($key) || in_array($key, $usedKeys, true)) {
                 if (is_callable($join)) {
-                    $join($builder, $searchConditions);
+                    $join($builder, $conditions);
                 } else {
-                    $this->$join($builder, $searchConditions);
+                    $this->$join($builder, $conditions);
                 }
             }
         }
@@ -276,5 +301,14 @@ abstract class SearchRepository extends Repository
         $fieldParts = explode('.', $sortField);
 
         return array_shift($fieldParts);
+    }
+
+    private function applyFiltersPresets($preparedBuilder, SearchConditions $conditions): void
+    {
+        $presets = static::getFiltersPresets();
+
+        foreach ($presets as $preset) {
+            $preset->apply($conditions, $preparedBuilder);
+        }
     }
 }
