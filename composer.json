@@ -1,5 +1,5 @@
 {
-    "name": "fks/laravel-util",
+    "name": "flekssk/laravel-util",
     "description": "utility classes",
     "type": "library",
     "require": {
