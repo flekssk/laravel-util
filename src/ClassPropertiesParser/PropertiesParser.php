@@ -5,9 +5,20 @@ declare(strict_types=1);
 namespace FKS\ClassPropertiesParser;
 
 use Doctrine\Common\Annotations\PhpParser;
-use DomainException;
-use Illuminate\Support\Str;
+use PHPStan\PhpDocParser\ParserConfig;
 use ReflectionClass;
+use PHPStan\PhpDocParser\Lexer\Lexer;
+use PHPStan\PhpDocParser\Parser\TypeParser;
+use PHPStan\PhpDocParser\Parser\ConstExprParser;
+use PHPStan\PhpDocParser\Parser\PhpDocParser;
+use PHPStan\PhpDocParser\Parser\TokenIterator;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ExtendsTagValueNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\PhpDocParser\Printer\Printer;
+use DomainException;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class PropertiesParser
 {
@@ -18,6 +29,10 @@ class PropertiesParser
 
         $properties = [];
         $useStatements = $parser->parseUseStatements($reflection);
+
+        if (is_a($classString, Collection::class, true)) {
+            dd(static::parseExtendsGenerics($classString));
+        }
 
         $constructorAnnotationProperties = [];
         $constructor = $reflection->getMethod('__construct');
@@ -116,5 +131,49 @@ class PropertiesParser
         }
 
         return $properties;
+    }
+
+    public static function parseExtendsGenerics(string $class): ?array
+    {
+        $ref = new ReflectionClass($class);
+        $doc = $ref->getDocComment();
+        if ($doc === false) {
+            return null;
+        }
+
+        $parserConfig = new ParserConfig([]);
+        $lexer = new Lexer($parserConfig);
+        $constParser = new ConstExprParser($parserConfig);
+        $phpDocParser = new PhpDocParser($parserConfig, new TypeParser($parserConfig, $constParser), new ConstExprParser($parserConfig));
+        $tokens = new TokenIterator($lexer->tokenize($doc));
+        $node = $phpDocParser->parse($tokens);
+        $printer = new Printer();
+
+        foreach ($node->children as $child) {
+            if ($child instanceof PhpDocTagNode && $child->name === '@extends') {
+                $value = $child->value;
+                if (!$value instanceof ExtendsTagValueNode) {
+                    continue;
+                }
+
+                $typeNode = $value->type;
+                $baseType = $typeNode->type;
+                $base = ltrim($baseType->name, '\\');
+
+                $generics = [];
+                foreach ($typeNode->genericTypes as $g) {
+                    $generics[] = $g instanceof IdentifierTypeNode
+                        ? ltrim($g->name, '\\')
+                        : trim($printer->print($g));
+                }
+
+                return [
+                    'base' => $base,
+                    'generics' => $generics,
+                ];
+            }
+        }
+
+        return null;
     }
 }

@@ -71,7 +71,7 @@ class Serializer implements SerializerInterface
             } elseif (class_exists($property->type)) {
                 if ($property instanceof ArrayClassProperty) {
                     if ($value === null && !$property->nullable) {
-                        throw new DomainException("Property $property->name of class " . static::class . ' can not be nullable');
+                        throw new DomainException("Property $property->name of class " . $class . ' can not be nullable');
                     }
                     $value = $value !== null ? array_map(fn (array $data) => $this->deserializeFromArray($data, $property->type), $value) : $value;
                 } elseif ($property->type === Carbon::class) {
