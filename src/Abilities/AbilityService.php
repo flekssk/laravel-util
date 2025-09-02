@@ -49,6 +49,10 @@ class AbilityService
         $template = $this->getFacadeTemplate();
         $content = $this->replacePlaceholders($template);
 
+        if (!is_dir(rtrim($this->abilitiesConfig->facadeClassPath))) {
+            mkdir(rtrim($this->abilitiesConfig->facadeClassPath), 0755, true);
+        }
+
         return file_put_contents(rtrim($this->abilitiesConfig->facadeClassPath) . '/AbilityFacade.php', $content) !== false;
     }
 

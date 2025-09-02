@@ -224,7 +224,7 @@ abstract class SearchRepository extends Repository
                 } elseif(array_keys(static::getMapAvailableFieldToWith(), $availableField)) {
                     $builder->with(static::getMapAvailableFieldToWith()[$availableField]);
                 } else {
-                    $select[] = $this->entityInstance->getTable() . 'Repositories' . $availableField;
+                    $select[] = $this->entityInstance->getTable() . '.' . $availableField;
                 }
             }
 

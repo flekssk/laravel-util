@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace FKS\Serializer;
 
+use App\Models\User;
 use BackedEnum;
 use Carbon\Carbon;
 use DomainException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use FKS\ClassPropertiesParser\ArrayClassProperty;
 use FKS\ClassPropertiesParser\PropertiesParser;
@@ -39,6 +41,7 @@ class Serializer implements SerializerInterface
         array $excludedKeys = [],
         bool $isArrayOf = false
     ): mixed {
+
         if ($isArrayOf) {
             $result = [];
             foreach ($data as $datum) {
@@ -70,13 +73,29 @@ class Serializer implements SerializerInterface
                 $value = is_a($value, $property->type) ? $value : $property->type::tryFrom($value);
             } elseif (class_exists($property->type)) {
                 if ($property instanceof ArrayClassProperty) {
+                    if (is_a($class, Collection::class, true)) {
+                        if ($data === null) {
+                            $data = [];
+                        }
+                        $value = $data;
+                    }
+
                     if ($value === null && !$property->nullable) {
                         throw new DomainException("Property $property->name of class " . $class . ' can not be nullable');
                     }
                     $value = $value !== null ? array_map(fn (array $data) => $this->deserializeFromArray($data, $property->type), $value) : $value;
                 } elseif ($property->type === Carbon::class) {
                     $value = Carbon::parse($value);
+                } elseif ($property->type === User::class) {
+                    $value = $value ?? auth()->user();
                 } else {
+                    if (
+                        is_a($property->type, Collection::class, true)
+                        && $value === null
+                    ) {
+                        $value = [];
+                    }
+
                     $value = $this->deserializeFromArray($value, $property->type);
                 }
             }

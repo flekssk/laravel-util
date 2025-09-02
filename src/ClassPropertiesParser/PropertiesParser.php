@@ -31,7 +31,18 @@ class PropertiesParser
         $useStatements = $parser->parseUseStatements($reflection);
 
         if (is_a($classString, Collection::class, true)) {
-            dd(static::parseExtendsGenerics($classString));
+            $extends = PropertiesParser::parseExtendsGenerics($classString);
+            $generic = null;
+            if (isset($extends['generics'])) {
+                $generic = count($extends['generics']) > 1 ? $extends['generics'][1] : $extends['generics'][0];
+            }
+
+            if (array_key_exists(strtolower($generic), $useStatements)) {
+                $type = $useStatements[strtolower($generic)];
+            }
+            return [
+                new ArrayClassProperty('items', $type ?? 'string', false),
+            ];
         }
 
         $constructorAnnotationProperties = [];
