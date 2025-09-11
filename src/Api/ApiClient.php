@@ -231,7 +231,11 @@ class ApiClient
                 $result = $result ? $data->mergeData($result) : $data;
             } else {
                 $respondedCount = count($data);
-                $result = $result === null ? $data : array_merge($data, $result);
+                if ($result instanceof ApiResponse) {
+                    $result = $result->mergeData($data);
+                } else {
+                    $result = $result === null ? $data : array_merge($data, $result);
+                }
             }
             $page++;
         } while ($respondedCount === $limit);

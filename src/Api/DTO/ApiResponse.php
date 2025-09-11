@@ -6,7 +6,7 @@ namespace FKS\Api\DTO;
 
 use FKS\Serializer\SerializableObject;
 
-class ApiResponse extends SerializableObject
+class ApiResponse extends SerializableObject implements \Countable
 {
     public mixed $data;
 
@@ -20,5 +20,10 @@ class ApiResponse extends SerializableObject
         $this->data = array_merge($this->data, $response->data);
 
         return $this;
+    }
+
+    public function count(): int
+    {
+        return count($this->data);
     }
 }
