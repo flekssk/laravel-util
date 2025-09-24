@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FKS\Metadata\Models;
 
+use FKS\Metadata\Collection\MetadataCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use FKS\Metadata\Casts\MetadataValueCast;
@@ -12,8 +13,6 @@ use ReflectionClass;
 
 abstract class Metadata extends Model
 {
-    use SoftDeletes;
-
     protected static ?MetadataConfig $config = null;
 
     protected $guarded = [];
@@ -53,11 +52,7 @@ abstract class Metadata extends Model
                         $this->table = self::$config->table;
                         $this->primaryKey = self::$config->primaryKey;
                         $this->casts = [
-                            self::$config->entityPrimaryKey => 'spanner_binary_uuid',
-                            self::$config->primaryKey => 'spanner_binary_uuid',
                             self::$config->metadataValueFieldName => MetadataValueCast::class,
-                            'created_by' => 'spanner_binary_uuid',
-                            'updated_by' => 'spanner_binary_uuid',
                         ];
                         self::$onlyFields = $only;
 
@@ -86,6 +81,11 @@ abstract class Metadata extends Model
         $reflection->setStaticPropertyValue('config', $config);
 
         return $reflection->newInstance();
+    }
+
+    public function newCollection(array $models = []): MetadataCollection
+    {
+        return new MetadataCollection($models);
     }
 
     public function getConfig(): MetadataConfig

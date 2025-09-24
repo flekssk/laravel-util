@@ -18,14 +18,12 @@ trait HasMetadata
             throw new Exception('HasMetadata trait can be applied only to child class of ' . Model::class);
         }
 
-        $model = Metadata::build(MetadataConfigHelper::getModelConfig(static::class));
+        $model = Metadata::build(MetadataConfigHelper::getModelConfig($this::class));
 
         $toSelect = ['*'];
 
         if ($model->getConfig()->onlyMetadataKeys) {
             $toSelect = [
-                $model->getConfig()->primaryKey,
-                $model->getConfig()->entityPrimaryKey,
                 $model->getConfig()->metadataKeyFieldName,
                 $model->getConfig()->metadataValueFieldName,
             ];
@@ -34,8 +32,8 @@ trait HasMetadata
         return (new HasMany(
             $model->newQuery(),
             $this,
-            $model->getTable() . 'Traits' . $model->getConfig()->entityPrimaryKey,
-            $model->getConfig()->entityPrimaryKey
+            $model->getTable() . '.' . $model->getConfig()->entityPrimaryKey,
+            'id'
         ))->select($toSelect);
     }
 }

@@ -16,7 +16,7 @@ use FKS\Search\ValueObjects\SearchConditions;
 abstract class SearchRequest extends FormRequest
 {
     public const DEFAULT_PER_PAGE = 20;
-    public const MAX_PER_PAGE = 200;
+    public const MAX_PER_PAGE = 1000;
 
     abstract public static function getAvailableFields(): array;
     abstract public static function getSortingDefinitions(): array;

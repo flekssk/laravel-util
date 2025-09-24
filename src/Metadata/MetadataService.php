@@ -53,7 +53,7 @@ abstract class MetadataService
         return $query->get();
     }
 
-    public function upsertMetadataChunk(int $entityId, array $metadataValues, int $userId): MetadataDiffCollection
+    public function upsertMetadataChunk(int $entityId, array $metadataValues): MetadataDiffCollection
     {
         $diff = [];
         $existedMetadata = $this->repository
@@ -92,7 +92,6 @@ abstract class MetadataService
                         $metadataKey,
                         $metadataValue,
                     ),
-                    $userId,
                 );
             } elseif ($this->areDifferent(
                 MetadataValueHelper::toString($metadata->$metadataValueFieldName),
@@ -113,7 +112,6 @@ abstract class MetadataService
                         $metadataKey,
                         $metadataValue,
                     ),
-                    $userId,
                 );
             }
         }
@@ -121,7 +119,7 @@ abstract class MetadataService
         return new MetadataDiffCollection($diff);
     }
 
-    public function create(int $entityId, MetadataValueDTO $metadataValue, int $userId): void
+    public function create(int $entityId, MetadataValueDTO $metadataValue): void
     {
         $this->repository->create(
             [
@@ -133,7 +131,7 @@ abstract class MetadataService
         );
     }
 
-    public function update(int $metadataId, int $entityId, MetadataValueDTO $metadataValue, int $userId): void
+    public function update(int $metadataId, int $entityId, MetadataValueDTO $metadataValue): void
     {
         $this->repository->updateByWhere(
             [

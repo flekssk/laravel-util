@@ -221,7 +221,7 @@ abstract class SearchRepository extends Repository
                     $select = array_merge($select, $mapper);
                 } elseif (is_string($mapper)) {
                     $select[] = $mapper . ' AS ' . $availableField;
-                } elseif(array_keys(static::getMapAvailableFieldToWith(), $availableField)) {
+                } elseif(array_key_exists($availableField, static::getMapAvailableFieldToWith())) {
                     $builder->with(static::getMapAvailableFieldToWith()[$availableField]);
                 } else {
                     $select[] = $this->entityInstance->getTable() . '.' . $availableField;

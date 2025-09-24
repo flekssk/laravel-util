@@ -85,7 +85,6 @@ class SearchRequest extends RequestBody
                 )
             );
         } catch (Throwable $e) {
-            dd($e);
             throw new L5SwaggerException($e->getMessage(), $e->getCode(), $e);
         }
     }
